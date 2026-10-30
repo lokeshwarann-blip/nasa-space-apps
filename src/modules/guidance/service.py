@@ -526,3 +526,4 @@ class GuidanceService:
                 redacted_records.append(rec_copy)
             dto.review_records = redacted_records
         return dto
+

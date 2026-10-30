@@ -165,6 +165,24 @@ The application runs as a secure, non-root user inside the container and will be
   * `POST /api/v1/guidance/{guidance_id}/reviews`: Transition guidance through auditable approval states (`draft` -> `under_review` -> `approved` / `rejected` -> `retired`).
   * `POST /api/v1/guidance/{guidance_id}/supersede`: Supersede guidance with a new version, automatically retiring the prior version and chaining provenance.
   * **Registry Separation**: Explicitly segregates `EDUCATIONAL` research material, `OPERATIONAL_INSTRUCTION` flight protocols, and `CLINICAL_RULE` decision thresholds. Unreviewed or retired guidance strictly cannot activate clinical rules in the assessment engine.
+* **Wellness Tasks & Reminders:**
+  * `GET /api/v1/tasks/definitions`: List reusable task blueprints and recurrence configurations.
+  * `POST /api/v1/tasks/definitions`: Configure reusable task definition (`FLIGHT_SURGEON` or `ADMIN`).
+  * `GET /api/v1/tasks`: List assigned task instances with due windows. Crew members view strictly their own tasks.
+  * `POST /api/v1/tasks`: Schedule a task instance with bounded due window for an astronaut (`FLIGHT_SURGEON` or `ADMIN`).
+  * `GET /api/v1/tasks/{task_id}`: Single task instance details and audit trail.
+  * `POST /api/v1/tasks/{task_id}/complete`: Fulfill task instance idempotently, linking telemetry or check-in references.
+  * `POST /api/v1/tasks/{task_id}/cancel`: Cancel task assignment with clinical justification (`FLIGHT_SURGEON` or `ADMIN`).
+* **Clinical Alerts Lifecycle:**
+  * `GET /api/v1/alerts`: Query clinical alerts filtered by crew member, status, priority, indicator, and event window.
+  * `POST /api/v1/alerts`: Ingest/trigger alert instance with deterministic idempotency deduplication for repeated findings.
+  * `GET /api/v1/alerts/{alert_id}`: Alert details with complete transition audit trail.
+  * `POST /api/v1/alerts/{alert_id}/acknowledge`: Acknowledge open alert (assigned astronaut or medical officer).
+  * `POST /api/v1/alerts/{alert_id}/assign`: Assign alert to designated medical reviewer (`FLIGHT_SURGEON` or `ADMIN`).
+  * `POST /api/v1/alerts/{alert_id}/resolve`: Record clinical resolution with documented justification (`FLIGHT_SURGEON` or `ADMIN`).
+  * `POST /api/v1/alerts/{alert_id}/dismiss`: Dismiss alert with auditable rationale (`FLIGHT_SURGEON` or `ADMIN`).
+  * `POST /api/v1/alerts/{alert_id}/escalate`: Escalate alert to higher tier operational destinations, accurately recording `NO_DELIVERY_PROVIDER` without false confirmation.
+  * **Safety Guarantees**: Delayed telemetry is explicitly flagged (`is_delayed=True`) and historical event time is preserved separately from alert creation time to avoid misclassifying delayed syncs as sudden acute emergencies.
 
 ---
 
@@ -180,7 +198,14 @@ pytest
 pytest -v
 ```
 
-The 114-test automated suite covers:
+The 129-test automated suite covers:
+- Task definition recurrence configuration and bounded due window validation.
+- Least-privilege authorization and BOLA prevention for task assignments and cancellations.
+- Idempotent task completion without duplicate audit records.
+- Clinical alert deduplication and idempotency key enforcement for repeated findings.
+- Controlled alert lifecycle state transitions (`open` -> `acknowledged` -> `assigned` -> `resolved` / `dismissed`) and rejection of invalid jumps.
+- Accurate reporting of unconfigured notification delivery providers (`NO_DELIVERY_PROVIDER`) upon alert escalation.
+- Delayed-event handling distinguishing historical telemetry from acute emergencies.
 - Evidence and guidance registry source provenance, document classification, and auditable approval workflows (`draft`, `under_review`, `approved`, `rejected`, `retired`).
 - Strict separation of educational material from operational flight instructions and clinical rules.
 - Role-based redaction of administrative reviewer metadata and restriction of draft/retired records from crew members.

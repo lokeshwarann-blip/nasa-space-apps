@@ -8,6 +8,8 @@ from src.models.wellness import WellnessCheckIn, SymptomCheckIn
 from src.models.clinical import GuidanceSource, GuidanceDocument, GuidanceReviewRecord, ClinicalRule, Assessment
 from src.models.audit import AuditEvent
 from src.models.user import User
+from src.models.tasks import TaskDefinition, TaskInstance, TaskAuditRecord
+from src.models.alerts import AlertInstance, AlertAuditRecord
 
 __all__ = [
     "Base",
@@ -25,4 +27,9 @@ __all__ = [
     "Assessment",
     "AuditEvent",
     "User",
+    "TaskDefinition",
+    "TaskInstance",
+    "TaskAuditRecord",
+    "AlertInstance",
+    "AlertAuditRecord",
 ]

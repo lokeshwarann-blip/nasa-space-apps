@@ -126,3 +126,4 @@ def downgrade() -> None:
     op.drop_column("guidance_sources", "citation_reference")
     op.drop_column("guidance_sources", "access_date")
     op.drop_column("guidance_sources", "publication_date")
+
