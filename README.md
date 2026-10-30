@@ -138,6 +138,15 @@ The application runs as a secure, non-root user inside the container and will be
 * **Authentication:** `POST /api/v1/auth/token` (Argon2id credential verification and JWT issuance)
 * **Identity Profile:** `GET /api/v1/auth/me` (returns verified claims and permissions)
 * **Object Access Verification:** `GET /api/v1/auth/crew/{target_crew_member_id}/access-verification`
+* **Health Measurements:**
+  * `POST /api/v1/measurements`: Ingest objective physiological measurements (heart rate, blood pressure, temperature, SpO₂, glucose). Explicitly converts units (e.g. °F to °C) and preserves original representation and sensor provenance.
+  * `GET /api/v1/measurements`: Paginated and filtered query (`crew_id`, `measurement_type`, `start_time`, `end_time`, `limit`, `offset`) with deterministic ordering.
+  * `GET /api/v1/measurements/{measurement_id}`: Single measurement record inspection.
+  * `POST /api/v1/measurements/{measurement_id}/invalidate`: Marks measurement as invalidated with an auditable reason; preserves historical observation without deletion or rewriting.
+* **Crew Check-Ins:**
+  * `POST /api/v1/check-ins`: Submits subjective self-report check-ins (`WELLNESS` ratings 1-5 or `SYMPTOM` reports with controlled vocabulary).
+  * `GET /api/v1/check-ins`: Paginated and filtered retrieval across check-in categories.
+  * `GET /api/v1/check-ins/{check_in_id}`: Single check-in inspection.
 
 ---
 
@@ -153,13 +162,19 @@ pytest
 pytest -v
 ```
 
-The 52-test automated suite covers:
+The 67-test automated suite covers:
+- Ingestion of objective biometric measurements and subjective check-ins.
+- Explicit unit conversions (e.g., Fahrenheit to Celsius) and provenance preservation.
+- Acceptance of clinically concerning but physiologically valid values (e.g. tachycardia).
+- Rejection of non-finite values (NaN/Infinity), unsupported types, and incompatible units.
+- Timezone-aware UTC enforcement, clock skew future detection, and stale timestamp rejection.
+- Duplicate submission detection with `409 Conflict`.
+- Broken Object-Level Authorization (BOLA) prevention and cross-crew data inspection blocks.
+- Pagination, time-range filtering, and deterministic ordering.
+- Measurement invalidation workflows and audit trail preservation.
 - Token signing, claims validation, expiration, and malformed token rejection.
 - Password hashing with Argon2id and random salt generation.
-- Role escalation prevention and object-level authorization (BOLA prevention).
-- Flight surgeon assigned scope verification and admin clinical record restrictions.
-- Audit logging sanitization and redaction of credentials and medical observations.
+- Role escalation prevention and object-level authorization.
 - Request payload size limiter (HTTP 413).
-- Typed measurement registry and explicit unit conversions.
-- Database models, constraints, cascades, and rollback isolation.
-- Liveness and readiness probes.
+- Typed measurement registry and database transaction isolation.
+- Liveness and readiness health probes.

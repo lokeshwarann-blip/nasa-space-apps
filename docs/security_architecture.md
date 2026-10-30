@@ -58,3 +58,4 @@ Every incoming request to protected endpoints is evaluated against:
    * The current development prototype uses stateless JWTs without a distributed token revocation blocklist (e.g., Redis blocklist). In production, token lifespans should be shortened (e.g., 15 minutes) with refresh token rotation.
 3. **Database-at-Rest Encryption:**
    * PostgreSQL tables containing telemetry must employ Transparent Data Encryption (TDE) or column-level envelope encryption in production cloud/on-prem environments.
+

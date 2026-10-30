@@ -69,3 +69,4 @@ async def record_audit_event(
         f"AUDIT: actor='{actor}' action='{action}' resource='{resource_type}:{resource_id}'"
     )
     return event
+

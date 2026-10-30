@@ -46,3 +46,4 @@ This policy defines the data lifecycle, retention windows, and cryptographic del
 1. Only users with the `ADMIN` role or an authorized Chief Flight Medical Officer may request a permanent purge.
 2. All deletion actions require explicit administrative confirmation and generate an auditable event with action `DELETE_HEALTH_RECORD` or `PURGE_CREW_MEMBER`.
 3. Automated retention sweeps run as scheduled background maintenance tasks against records exceeding their statutory expiration dates.
+

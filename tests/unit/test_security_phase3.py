@@ -129,3 +129,4 @@ def test_audit_log_data_leakage_prevention():
     assert sanitized["findings"] == "[REDACTED]"
     assert sanitized["nested"]["secret_key"] == "[REDACTED]"
     assert sanitized["nested"]["safe_counter"] == 42
+

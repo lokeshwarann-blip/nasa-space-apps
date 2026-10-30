@@ -68,3 +68,4 @@ class User(Base, TimestampMixin):
         "CrewMember",
         foreign_keys=[crew_member_id],
     )
+

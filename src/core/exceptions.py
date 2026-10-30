@@ -44,8 +44,63 @@ class ResourceNotFoundError(AppException):
     def __init__(self, resource_type: str, resource_id: Any):
         super().__init__(
             message=f"{resource_type} with ID '{resource_id}' was not found.",
-            code="RESOURCE_NOT_FOUND",
+            code="not_found",
             status_code=status.HTTP_404_NOT_FOUND,
+        )
+
+
+class UnsupportedMeasurementTypeError(AppException):
+    """Raised when a submitted measurement type is not supported."""
+
+    def __init__(self, measurement_type: str):
+        super().__init__(
+            message=f"Measurement type '{measurement_type}' is not supported.",
+            code="unsupported_measurement_type",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class InvalidUnitError(AppException):
+    """Raised when a submitted measurement unit is incompatible."""
+
+    def __init__(self, unit: str, measurement_type: str, allowed_units: list[str]):
+        super().__init__(
+            message=f"Unit '{unit}' is invalid for measurement '{measurement_type}'. Allowed: {allowed_units}",
+            code="invalid_unit",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class InvalidValueError(AppException):
+    """Raised when a measurement value is non-finite, missing, or malformed."""
+
+    def __init__(self, message: str):
+        super().__init__(
+            message=message,
+            code="invalid_value",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class InvalidTimestampError(AppException):
+    """Raised when a timestamp is non-UTC, in the future, or excessively stale."""
+
+    def __init__(self, message: str):
+        super().__init__(
+            message=message,
+            code="invalid_timestamp",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class DuplicateSubmissionError(AppException):
+    """Raised when an identical measurement has already been ingested."""
+
+    def __init__(self, message: str = "Duplicate measurement already submitted."):
+        super().__init__(
+            message=message,
+            code="duplicate_submission",
+            status_code=status.HTTP_409_CONFLICT,
         )
 
 
@@ -75,20 +130,31 @@ def register_exception_handlers(app: FastAPI) -> None:
         req_id = get_request_id() or request.headers.get("X-Request-ID", "")
         # Sanitize errors to remove any internal memory representations
         sanitized_errors = []
+        primary_code = "VALIDATION_ERROR"
         for err in exc.errors():
+            msg = err.get("msg", "Validation error")
+            loc = [str(x) for x in err.get("loc", [])]
+            err_type = err.get("type", "value_error")
+            loc_str = "".join(loc).lower()
+            if "timestamp" in msg.lower() or "timestamp" in loc_str or "measured_at" in loc_str or "onset_time" in loc_str:
+                primary_code = "invalid_timestamp"
+            elif "finite" in msg.lower() or "nan" in msg.lower() or "numeric" in msg.lower():
+                primary_code = "invalid_value"
+            elif "unit" in loc_str:
+                primary_code = "invalid_unit"
             sanitized_errors.append(
                 {
-                    "loc": [str(x) for x in err.get("loc", [])],
-                    "msg": err.get("msg", "Validation error"),
-                    "type": err.get("type", "value_error"),
+                    "loc": loc,
+                    "msg": msg,
+                    "type": err_type,
                 }
             )
         logger.info(f"Request validation failed: {len(sanitized_errors)} errors")
         return JSONResponse(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             content={
                 "error": {
-                    "code": "VALIDATION_ERROR",
+                    "code": primary_code,
                     "message": "Input validation failed. Please check the provided data.",
                     "details": sanitized_errors,
                     "request_id": req_id,

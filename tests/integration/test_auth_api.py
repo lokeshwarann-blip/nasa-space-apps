@@ -13,11 +13,11 @@ def test_missing_token_returns_401(client: TestClient):
     response = client.get("/api/v1/auth/me")
     assert response.status_code == 401
     data = response.json()
-    assert data["error"]["code"] == "AUTHENTICATION_REQUIRED"
+    assert data["error"]["code"] == "unauthorized"
 
 
 def test_expired_token_returns_401(client: TestClient):
-    """Verify expired token returns 401 with TOKEN_EXPIRED error code."""
+    """Verify expired token returns 401 with unauthorized error code."""
     expired_token = create_access_token(
         subject="astronaut_01",
         role="CREW_MEMBER",
@@ -29,18 +29,18 @@ def test_expired_token_returns_401(client: TestClient):
     )
     assert response.status_code == 401
     data = response.json()
-    assert data["error"]["code"] == "TOKEN_EXPIRED"
+    assert data["error"]["code"] == "unauthorized"
 
 
 def test_malformed_token_returns_401(client: TestClient):
-    """Verify malformed/tampered token returns 401 with INVALID_TOKEN error code."""
+    """Verify malformed/tampered token returns 401 with unauthorized error code."""
     response = client.get(
         "/api/v1/auth/me",
         headers={"Authorization": "Bearer bad.token.here"},
     )
     assert response.status_code == 401
     data = response.json()
-    assert data["error"]["code"] == "INVALID_TOKEN"
+    assert data["error"]["code"] == "unauthorized"
 
 
 def test_valid_token_returns_authenticated_identity(client: TestClient):
@@ -76,7 +76,7 @@ def test_role_escalation_prevented(app, client: TestClient):
     )
     assert response.status_code == 403
     data = response.json()
-    assert data["error"]["code"] == "INSUFFICIENT_PERMISSIONS"
+    assert data["error"]["code"] == "forbidden"
 
 
 def test_cross_crew_bola_access_rejected(client: TestClient):
@@ -107,7 +107,7 @@ def test_cross_crew_bola_access_rejected(client: TestClient):
         headers={"Authorization": f"Bearer {token_crew_1}"},
     )
     assert res_cross.status_code == 403
-    assert res_cross.json()["error"]["code"] == "AUTHORIZATION_FAILED"
+    assert res_cross.json()["error"]["code"] == "forbidden"
 
 
 def test_flight_surgeon_scope_enforcement(client: TestClient):
@@ -134,7 +134,7 @@ def test_flight_surgeon_scope_enforcement(client: TestClient):
         headers={"Authorization": f"Bearer {surgeon_token}"},
     )
     assert res_unassigned.status_code == 403
-    assert res_unassigned.json()["error"]["code"] == "AUTHORIZATION_FAILED"
+    assert res_unassigned.json()["error"]["code"] == "forbidden"
 
 
 def test_admin_denied_clinical_access_without_assignment(client: TestClient):
@@ -152,7 +152,7 @@ def test_admin_denied_clinical_access_without_assignment(client: TestClient):
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert response.status_code == 403
-    assert response.json()["error"]["code"] == "AUTHORIZATION_FAILED"
+    assert response.json()["error"]["code"] == "forbidden"
 
 
 def test_request_size_limit_rejection(client: TestClient):
@@ -165,3 +165,4 @@ def test_request_size_limit_rejection(client: TestClient):
     )
     assert response.status_code == 413
     assert response.json()["error"]["code"] == "PAYLOAD_TOO_LARGE"
+

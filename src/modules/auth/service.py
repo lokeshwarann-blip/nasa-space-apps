@@ -17,7 +17,7 @@ class AuthorizationError(AppException):
     def __init__(self, message: str = "Access denied: insufficient permissions for this resource."):
         super().__init__(
             message=message,
-            code="AUTHORIZATION_FAILED",
+            code="forbidden",
             status_code=403,
         )
 
@@ -28,7 +28,7 @@ class AuthenticationError(AppException):
     def __init__(self, message: str = "Authentication required or invalid credentials."):
         super().__init__(
             message=message,
-            code="AUTHENTICATION_FAILED",
+            code="unauthorized",
             status_code=401,
         )
 
@@ -154,3 +154,4 @@ class AuthService:
             raise AuthorizationError(
                 f"User '{identity.username}' is not authorized to access health records for crew '{target_crew_member_id}'."
             )
+

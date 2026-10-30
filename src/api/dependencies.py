@@ -23,7 +23,7 @@ async def get_current_identity(
     if credentials is None or not credentials.credentials:
         raise AppException(
             message="Missing or malformed Authorization header. Bearer token required.",
-            code="AUTHENTICATION_REQUIRED",
+            code="unauthorized",
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
@@ -34,13 +34,13 @@ async def get_current_identity(
     except TokenExpiredError as exc:
         raise AppException(
             message=str(exc),
-            code="TOKEN_EXPIRED",
+            code="unauthorized",
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
     except InvalidTokenError as exc:
         raise AppException(
             message=str(exc),
-            code="INVALID_TOKEN",
+            code="unauthorized",
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
@@ -57,7 +57,7 @@ def require_roles(*allowed_roles: str) -> Callable:
                     f"Role '{identity.role}' does not have required permissions. "
                     f"Required one of: {list(allowed_roles)}"
                 ),
-                code="INSUFFICIENT_PERMISSIONS",
+                code="forbidden",
                 status_code=status.HTTP_403_FORBIDDEN,
             )
         return identity
@@ -78,3 +78,4 @@ async def verify_crew_access_dependency(
         action="ACCESS_HEALTH_RECORD",
     )
     return identity
+

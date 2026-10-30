@@ -109,3 +109,4 @@ class LocalDevIdentityProvider(IdentityProvider):
 
 # Global adapter instance
 default_identity_provider = LocalDevIdentityProvider()
+
