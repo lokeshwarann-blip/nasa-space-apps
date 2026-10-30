@@ -315,3 +315,4 @@ class TelemetryService:
         )
 
         return cls._map_measurement_to_response(measurement)
+

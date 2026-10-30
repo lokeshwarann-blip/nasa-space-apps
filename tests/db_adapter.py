@@ -41,3 +41,4 @@ class AsyncSessionAdapter:
 
     async def scalar(self, statement: Any, *args: Any, **kwargs: Any) -> Any:
         return self._sync.scalar(statement, *args, **kwargs)
+

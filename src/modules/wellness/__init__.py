@@ -2,3 +2,4 @@
 from src.modules.wellness.service import CheckInService
 
 __all__ = ["CheckInService"]
+

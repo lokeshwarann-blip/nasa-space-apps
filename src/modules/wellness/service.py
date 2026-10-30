@@ -233,3 +233,4 @@ class CheckInService:
         total = len(results)
         paged = results[offset : offset + limit]
         return paged, total
+

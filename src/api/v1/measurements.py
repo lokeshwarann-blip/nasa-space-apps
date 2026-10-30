@@ -120,3 +120,4 @@ async def invalidate_measurement(
     )
     await session.commit()
     return measurement
+

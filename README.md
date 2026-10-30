@@ -147,6 +147,10 @@ The application runs as a secure, non-root user inside the container and will be
   * `POST /api/v1/check-ins`: Submits subjective self-report check-ins (`WELLNESS` ratings 1-5 or `SYMPTOM` reports with controlled vocabulary).
   * `GET /api/v1/check-ins`: Paginated and filtered retrieval across check-in categories.
   * `GET /api/v1/check-ins/{check_in_id}`: Single check-in inspection.
+* **Longitudinal Trends & Empirical Baselines:**
+  * `GET /api/v1/trends/{measurement_type}`: Longitudinal trend series calculation over bounded windows with deterministic sample statistics (count, min, max, mean, median, sample standard deviation), temporal gap detection, data quality metrics, and outlier labeling.
+  * `GET /api/v1/trends/{measurement_type}/summary`: Condensed statistical summary without raw observation points.
+  * `GET /api/v1/baselines/{measurement_type}`: Empirical personal baseline calculated solely from actual historical observations (minimum 10 samples required; returns `baseline_status='UNAVAILABLE'` if insufficient; never substitutes population baselines or synthetic data).
 
 ---
 
@@ -162,7 +166,11 @@ pytest
 pytest -v
 ```
 
-The 67-test automated suite covers:
+The 85-test automated suite covers:
+- Longitudinal trend calculations and descriptive statistics (count, min, max, arithmetic mean, median, sample standard deviation).
+- Data quality evaluation, observation freshness, and coverage gap detection.
+- Statistical outlier detection labeled strictly as statistical observations (not medical diagnoses).
+- Empirical personal baseline calculation with strict minimum sample requirements and `UNAVAILABLE` fallback.
 - Ingestion of objective biometric measurements and subjective check-ins.
 - Explicit unit conversions (e.g., Fahrenheit to Celsius) and provenance preservation.
 - Acceptance of clinically concerning but physiologically valid values (e.g. tachycardia).
