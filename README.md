@@ -151,6 +151,11 @@ The application runs as a secure, non-root user inside the container and will be
   * `GET /api/v1/trends/{measurement_type}`: Longitudinal trend series calculation over bounded windows with deterministic sample statistics (count, min, max, mean, median, sample standard deviation), temporal gap detection, data quality metrics, and outlier labeling.
   * `GET /api/v1/trends/{measurement_type}/summary`: Condensed statistical summary without raw observation points.
   * `GET /api/v1/baselines/{measurement_type}`: Empirical personal baseline calculated solely from actual historical observations (minimum 10 samples required; returns `baseline_status='UNAVAILABLE'` if insufficient; never substitutes population baselines or synthetic data).
+* **Explainable Health Assessment Engine:**
+  * `POST /api/v1/assessments`: Request an explainable clinical assessment evaluated strictly by versioned, approved deterministic rules. Verifies input data provenance, unit conformity, freshness, and temporal validity.
+  * `GET /api/v1/assessments/{assessment_id}`: Retrieve a persisted assessment record with full explainability trace (triggered findings, rule versions, clinical rationale, cited guidelines, and SHA-256 input snapshot hash).
+  * `GET /api/v1/assessments`: Paginated and filtered query of historical assessments (`crew_id`, `status`, `start_time`, `end_time`, `limit`, `offset`).
+  * **Safety Guarantees**: Zero machine learning or generative AI for clinical decisions; production rule registry is empty by default until explicitly configured with approved rules; safe-failure transitions execution errors to `needs_review` rather than falsely declaring health nominal.
 
 ---
 
@@ -166,7 +171,13 @@ pytest
 pytest -v
 ```
 
-The 85-test automated suite covers:
+The 100-test automated suite covers:
+- Deterministic, explainable clinical rule engine and registry validation.
+- Assessment status transitions (`assessed_no_findings`, `partially_assessed`, `insufficient_evidence`, `needs_review`, `not_assessed`).
+- Safe failure behavior ensuring rule execution runtime errors never silently report nominal health.
+- Cryptographic reproducibility hashing (SHA-256) capturing input observation IDs and rule versions.
+- Data freshness threshold enforcement and stale observation detection.
+- Object-level authorization for assessment generation and retrieval (BOLA prevention).
 - Longitudinal trend calculations and descriptive statistics (count, min, max, arithmetic mean, median, sample standard deviation).
 - Data quality evaluation, observation freshness, and coverage gap detection.
 - Statistical outlier detection labeled strictly as statistical observations (not medical diagnoses).

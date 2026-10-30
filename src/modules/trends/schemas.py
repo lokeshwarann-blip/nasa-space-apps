@@ -87,3 +87,4 @@ class TrendSummaryResponse(BaseModel):
     data_quality: DataQualitySummary
     statistics: SummaryStatistics
     baseline: BaselineResponse | None = None
+

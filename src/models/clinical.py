@@ -168,7 +168,7 @@ class Assessment(Base):
     __tablename__ = "assessments"
     __table_args__ = (
         CheckConstraint(
-            "assessment_status IN ('NOMINAL', 'CAUTION', 'CRITICAL', 'INSUFFICIENT_DATA')",
+            "assessment_status IN ('assessed_no_findings', 'partially_assessed', 'not_assessed', 'insufficient_evidence', 'needs_review', 'NOMINAL', 'CAUTION', 'CRITICAL', 'INSUFFICIENT_DATA')",
             name="chk_assessment_status",
         ),
         Index("ix_assessment_subject_assessed_at", "subject_id", "assessed_at"),

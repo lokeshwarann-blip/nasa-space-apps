@@ -137,3 +137,4 @@ def test_personal_baseline_configured_when_sufficient():
     assert "baseline_median" in baseline.baseline_values
     assert "nominal_range_lower" in baseline.baseline_values
     assert "nominal_range_upper" in baseline.baseline_values
+
