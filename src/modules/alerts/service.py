@@ -537,3 +537,4 @@ class AlertService:
 
         await session.commit()
         return await AlertService.get_alert(session=session, alert_id=alert.id, actor_identity=actor_identity)
+

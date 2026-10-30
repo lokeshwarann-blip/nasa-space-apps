@@ -172,3 +172,4 @@ def downgrade() -> None:
     op.drop_table("task_audit_records")
     op.drop_table("task_instances")
     op.drop_table("task_definitions")
+

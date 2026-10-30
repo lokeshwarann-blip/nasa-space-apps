@@ -94,3 +94,4 @@ def test_delayed_event_flagging_logic():
     recent_event_time = now - timedelta(minutes=10)
     recent_delay = (now - recent_event_time).total_seconds()
     assert (recent_delay > 3600.0) is False
+

@@ -10,6 +10,7 @@ from src.models.audit import AuditEvent
 from src.models.user import User
 from src.models.tasks import TaskDefinition, TaskInstance, TaskAuditRecord
 from src.models.alerts import AlertInstance, AlertAuditRecord
+from src.models.sync import SyncEventRecord
 
 __all__ = [
     "Base",
@@ -32,4 +33,5 @@ __all__ = [
     "TaskAuditRecord",
     "AlertInstance",
     "AlertAuditRecord",
+    "SyncEventRecord",
 ]

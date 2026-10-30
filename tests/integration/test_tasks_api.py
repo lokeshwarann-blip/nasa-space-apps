@@ -274,3 +274,4 @@ def test_invalid_task_due_window(client: TestClient, flight_surgeon_token, test_
     )
     assert res.status_code == 400
     assert "due_start must strictly precede due_end" in res.json()["error"]["message"]
+

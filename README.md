@@ -183,6 +183,12 @@ The application runs as a secure, non-root user inside the container and will be
   * `POST /api/v1/alerts/{alert_id}/dismiss`: Dismiss alert with auditable rationale (`FLIGHT_SURGEON` or `ADMIN`).
   * `POST /api/v1/alerts/{alert_id}/escalate`: Escalate alert to higher tier operational destinations, accurately recording `NO_DELIVERY_PROVIDER` without false confirmation.
   * **Safety Guarantees**: Delayed telemetry is explicitly flagged (`is_delayed=True`) and historical event time is preserved separately from alert creation time to avoid misclassifying delayed syncs as sudden acute emergencies.
+* **Offline Synchronization API:**
+  * `POST /api/v1/sync`: Ingests bounded batches (1-100 events) of physiological measurements, wellness ratings, and symptom check-ins recorded offline during loss-of-signal (LOS) periods.
+  * `GET /api/v1/sync/status/{client_event_id}`: Polls synchronization status and reconciliation outcome for a specific client event UUID.
+  * **Idempotency & Conflict Detection**: Database-enforced idempotency via `client_event_id` and SHA-256 canonical payload hashing. Identical retries return `duplicate`; reusing a UUID with conflicting data returns `conflict` and audits the event without PHI leakage.
+  * **Partial Batch Success**: Nested transaction isolation (`begin_nested()`) ensures valid events commit even if individual events fail validation.
+  * **Temporal Ordering & Clock Skew**: Tolerates up to 15 minutes of future clock drift while accepting historical backlogs. Chronological indexing ensures late-arriving earlier observations never overwrite newer records.
 
 ---
 
@@ -198,7 +204,12 @@ pytest
 pytest -v
 ```
 
-The 129-test automated suite covers:
+The 140-test automated suite covers:
+- Bounded offline batch synchronization (1-100 events) across measurements, wellness check-ins, and symptom reports.
+- Database-enforced idempotency and SHA-256 canonical payload hashing.
+- Rejection of conflicting event UUIDs and auditable conflict logging without personal health information.
+- Partial batch success and atomic savepoint isolation across events.
+- Clock-skew future timestamp limits (15-minute tolerance) and reconciliation of delayed, out-of-order telemetry.
 - Task definition recurrence configuration and bounded due window validation.
 - Least-privilege authorization and BOLA prevention for task assignments and cancellations.
 - Idempotent task completion without duplicate audit records.

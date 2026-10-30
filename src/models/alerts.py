@@ -247,3 +247,4 @@ class AlertAuditRecord(Base):
         "AlertInstance",
         back_populates="audit_records",
     )
+

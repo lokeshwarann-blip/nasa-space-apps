@@ -6,6 +6,20 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 
+class _NestedTransactionAdapter:
+    """Async context manager wrapping a synchronous SQLAlchemy nested transaction (savepoint)."""
+
+    def __init__(self, nested_tx: Any) -> None:
+        self._tx = nested_tx
+
+    async def __aenter__(self) -> Any:
+        self._tx.__enter__()
+        return self
+
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Any:
+        return self._tx.__exit__(exc_type, exc_val, exc_tb)
+
+
 class AsyncSessionAdapter:
     """Adapts a synchronous SQLAlchemy Session for async/await calls."""
 
@@ -35,6 +49,9 @@ class AsyncSessionAdapter:
 
     async def close(self) -> None:
         self._sync.close()
+
+    def begin_nested(self) -> _NestedTransactionAdapter:
+        return _NestedTransactionAdapter(self._sync.begin_nested())
 
     async def execute(self, statement: Any, *args: Any, **kwargs: Any) -> Any:
         return self._sync.execute(statement, *args, **kwargs)

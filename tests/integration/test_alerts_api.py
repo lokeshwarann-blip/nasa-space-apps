@@ -286,3 +286,4 @@ def test_alerts_bola_prevention(client: TestClient, crew_1_token, crew_2_token, 
     )
     assert crew_ack.status_code == 200
     assert crew_ack.json()["status"] == "acknowledged"
+

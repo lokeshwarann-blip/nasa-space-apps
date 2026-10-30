@@ -114,3 +114,4 @@ class AlertInstanceListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+

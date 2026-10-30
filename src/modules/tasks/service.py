@@ -427,3 +427,4 @@ class TaskService:
 
         await session.commit()
         return await TaskService.get_instance(session=session, task_id=task.id, actor_identity=actor_identity)
+
