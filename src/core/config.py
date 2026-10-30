@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     )
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     ALGORITHM: str = "HS256"
+    JWT_ISSUER: str = "nasa-space-apps-auth"
+    JWT_AUDIENCE: str = "nasa-space-apps-api"
+
+    # Request limits
+    MAX_REQUEST_BODY_SIZE_BYTES: int = 1_048_576  # 1 MB
 
     # CORS Settings
     ALLOWED_ORIGINS: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]

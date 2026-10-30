@@ -1,7 +1,9 @@
+from unittest.mock import AsyncMock, MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
 from src.core.config import Settings
+from src.core.database import get_db
 from src.main import create_app
 
 
@@ -18,9 +20,27 @@ def test_settings() -> Settings:
 
 
 @pytest.fixture
-def app(test_settings: Settings):
-    """Provides a fresh FastAPI test application instance."""
-    return create_app(settings=test_settings)
+def mock_db_session():
+    """Provides a mock async database session for isolated API testing."""
+    session = AsyncMock()
+    session.add = MagicMock()  # Synchronous in SQLAlchemy
+    session.flush = AsyncMock()
+    session.commit = AsyncMock()
+    session.rollback = AsyncMock()
+    session.refresh = AsyncMock()
+    return session
+
+
+@pytest.fixture
+def app(test_settings: Settings, mock_db_session):
+    """Provides a fresh FastAPI test application instance with mocked database session."""
+    application = create_app(settings=test_settings)
+
+    async def _override_get_db():
+        yield mock_db_session
+
+    application.dependency_overrides[get_db] = _override_get_db
+    return application
 
 
 @pytest.fixture

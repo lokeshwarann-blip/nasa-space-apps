@@ -7,6 +7,7 @@ from src.models.telemetry import HealthMeasurement
 from src.models.wellness import WellnessCheckIn, SymptomCheckIn
 from src.models.clinical import GuidanceSource, ClinicalRule, Assessment
 from src.models.audit import AuditEvent
+from src.models.user import User
 
 __all__ = [
     "Base",
@@ -21,5 +22,5 @@ __all__ = [
     "ClinicalRule",
     "Assessment",
     "AuditEvent",
+    "User",
 ]
-

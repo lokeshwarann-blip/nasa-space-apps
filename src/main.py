@@ -4,7 +4,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.middleware import RequestCorrelationMiddleware
+from src.api.middleware import RequestCorrelationMiddleware, RequestSizeLimitMiddleware
 from src.api.router import api_v1_router, root_health_router
 from src.core.config import Settings, get_settings
 from src.core.database import close_db_connection
@@ -64,6 +64,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_exception_handlers(app)
 
     # 2. Add Request Correlation & Safe Logging Middleware
+    app.add_middleware(RequestSizeLimitMiddleware)
     app.add_middleware(RequestCorrelationMiddleware)
 
     # 3. Add CORS Middleware
