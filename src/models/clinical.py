@@ -58,9 +58,9 @@ class GuidanceSource(Base, TimestampMixin):
     )
     review_state: Mapped[str] = mapped_column(
         String(32),
-        default="APPROVED",
+        default="approved",
         nullable=False,
-        comment="State: DRAFT, UNDER_REVIEW, APPROVED, SUPERSEDED",
+        comment="State: draft, under_review, approved, rejected, retired",
     )
     reviewer_metadata: Mapped[dict[str, Any] | None] = mapped_column(
         JSON,
@@ -77,9 +77,67 @@ class GuidanceSource(Base, TimestampMixin):
     )
     approval_status: Mapped[str] = mapped_column(
         String(32),
-        default="ACTIVE",
+        default="approved",
         nullable=False,
-        comment="Status: ACTIVE, INACTIVE, DEPRECATED",
+        comment="Status: draft, under_review, approved, rejected, retired",
+    )
+    publication_date: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Official publication or release date",
+    )
+    access_date: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Date source was accessed or verified",
+    )
+    citation_reference: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        comment="Page, section, or passage reference",
+    )
+    summary: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment="Concise summary with attribution",
+    )
+    health_indicator: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+        comment="Relevant health indicator if specified",
+    )
+    spaceflight_hazard: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+        comment="Relevant spaceflight hazard if specified",
+    )
+    mission_context: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+        comment="Applicable mission context if specified",
+    )
+    target_population: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        comment="Target crew population",
+    )
+    evidence_limitations: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment="Evidence limitations and intended scope",
+    )
+    intended_use: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment="Intended operational or educational use",
+    )
+    next_review_date: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Expiry or scheduled next review date",
     )
 
     # Relationships
@@ -87,6 +145,216 @@ class GuidanceSource(Base, TimestampMixin):
         "ClinicalRule",
         back_populates="guidance_source",
         cascade="all, delete-orphan",
+    )
+    guidance_documents: Mapped[list["GuidanceDocument"]] = relationship(
+        "GuidanceDocument",
+        back_populates="guidance_source",
+        cascade="all, delete-orphan",
+    )
+
+
+class GuidanceDocument(Base, TimestampMixin):
+    """Specific guidance record separating educational material, operational instructions, and clinical rules."""
+
+    __tablename__ = "guidance_documents"
+    __table_args__ = (
+        CheckConstraint(
+            "guidance_type IN ('EDUCATIONAL', 'OPERATIONAL_INSTRUCTION', 'CLINICAL_RULE')",
+            name="chk_guidance_type",
+        ),
+        CheckConstraint(
+            "approval_status IN ('draft', 'under_review', 'approved', 'rejected', 'retired')",
+            name="chk_guidance_approval_status",
+        ),
+        Index("ix_guidance_topic_indicator", "topic", "health_indicator"),
+        Index("ix_guidance_hazard_context", "spaceflight_hazard", "mission_context"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    guidance_source_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("guidance_sources.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    document_identifier: Mapped[str] = mapped_column(
+        String(64),
+        unique=True,
+        index=True,
+        nullable=False,
+        comment="Unique identifier for the guidance document (e.g. DOC-NASA-HRP-SLEEP-01)",
+    )
+    title: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    guidance_type: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        index=True,
+        comment="EDUCATIONAL, OPERATIONAL_INSTRUCTION, or CLINICAL_RULE",
+    )
+    summary: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        comment="Concise summary with attribution",
+    )
+    content: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment="Guidance content, operational protocol, or educational details",
+    )
+    citation_reference: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        comment="Page, section, or passage reference",
+    )
+    topic: Mapped[str | None] = mapped_column(
+        String(128),
+        nullable=True,
+        index=True,
+        comment="Subject topic (e.g. Cardiovascular, Sleep & Fatigue)",
+    )
+    health_indicator: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+        comment="Associated health indicator (e.g. heart_rate, sleep_duration)",
+    )
+    spaceflight_hazard: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+        comment="Spaceflight hazard (e.g. MICROGRAVITY, RADIATION, ISOLATION)",
+    )
+    mission_context: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+        comment="Mission context (e.g. TRANSIT, LEO, LUNAR, MARS, EVA, ANY)",
+    )
+    target_population: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        comment="Target population",
+    )
+    evidence_limitations: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment="Evidence limitations, contraindications, and caveats",
+    )
+    intended_use: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment="Intended clinical or educational use",
+    )
+    approval_status: Mapped[str] = mapped_column(
+        String(32),
+        default="draft",
+        nullable=False,
+        index=True,
+        comment="draft, under_review, approved, rejected, retired",
+    )
+    version: Mapped[str] = mapped_column(
+        String(32),
+        default="1.0.0",
+        nullable=False,
+    )
+    superseded_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("guidance_documents.id", ondelete="SET NULL"),
+        nullable=True,
+        comment="Points to replacement guidance document if superseded",
+    )
+    effective_from: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    effective_to: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    next_review_date: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    review_metadata: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        comment="Internal reviewer notes and administrative metadata (redacted for crew)",
+    )
+
+    # Relationships
+    guidance_source: Mapped["GuidanceSource | None"] = relationship(
+        "GuidanceSource",
+        back_populates="guidance_documents",
+    )
+    review_records: Mapped[list["GuidanceReviewRecord"]] = relationship(
+        "GuidanceReviewRecord",
+        back_populates="guidance_document",
+        cascade="all, delete-orphan",
+        order_by="GuidanceReviewRecord.reviewed_at.desc()",
+    )
+    clinical_rules: Mapped[list["ClinicalRule"]] = relationship(
+        "ClinicalRule",
+        back_populates="guidance_document",
+    )
+
+
+class GuidanceReviewRecord(Base):
+    """Auditable review record tracking status transitions and reviewer rationales."""
+
+    __tablename__ = "guidance_review_records"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    guidance_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("guidance_documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    reviewer_id: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+    )
+    reviewer_role: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+    previous_status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+    )
+    new_status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+    )
+    decision_rationale: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+    reviewed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    metadata_snapshot: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON,
+        nullable=True,
+    )
+
+    # Relationship
+    guidance_document: Mapped["GuidanceDocument"] = relationship(
+        "GuidanceDocument",
+        back_populates="review_records",
     )
 
 
@@ -108,6 +376,12 @@ class ClinicalRule(Base, TimestampMixin):
         UUID(as_uuid=True),
         ForeignKey("guidance_sources.id", ondelete="RESTRICT"),
         nullable=False,
+        index=True,
+    )
+    guidance_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("guidance_documents.id", ondelete="SET NULL"),
+        nullable=True,
         index=True,
     )
     rule_identifier: Mapped[str] = mapped_column(
@@ -144,20 +418,24 @@ class ClinicalRule(Base, TimestampMixin):
     )
     review_state: Mapped[str] = mapped_column(
         String(32),
-        default="APPROVED",
+        default="approved",
         nullable=False,
-        comment="State: APPROVED, DRAFT, UNDER_REVIEW, SUPERSEDED",
+        comment="State: approved, draft, under_review, rejected, retired",
     )
     approval_status: Mapped[str] = mapped_column(
         String(32),
-        default="ACTIVE",
+        default="approved",
         nullable=False,
-        comment="Status: ACTIVE, INACTIVE",
+        comment="Status: approved, draft, under_review, rejected, retired",
     )
 
     # Relationships
     guidance_source: Mapped["GuidanceSource"] = relationship(
         "GuidanceSource",
+        back_populates="clinical_rules",
+    )
+    guidance_document: Mapped["GuidanceDocument | None"] = relationship(
+        "GuidanceDocument",
         back_populates="clinical_rules",
     )
 

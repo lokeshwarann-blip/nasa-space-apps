@@ -394,3 +394,4 @@ def test_assessment_cross_crew_access_rejected(client: TestClient, test_crew, cr
     )
     assert res_cross.status_code == 403
     assert res_cross.json()["error"]["code"] == "forbidden"
+

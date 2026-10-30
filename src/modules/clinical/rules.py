@@ -29,8 +29,10 @@ class ClinicalRuleInterface(ABC):
     title: str
     description: str
     guidance_source: dict[str, str]
+    guidance_document_id: str | None = None
+    guidance_approval_status: str = "approved"
     applicable_context: str
-    approval_status: Literal["APPROVED", "DRAFT", "SUPERSEDED", "DEPRECATED"]
+    approval_status: str = "approved"  # approved, draft, under_review, rejected, retired
     effective_from: datetime | None = None
     effective_to: datetime | None = None
     target_measurement_types: list[str] = []
@@ -88,21 +90,27 @@ class ClinicalRuleRegistry:
         active: list[ClinicalRuleInterface] = []
 
         for rule in self._rules.values():
-            # 1. Approval check (reject DRAFT, SUPERSEDED, DEPRECATED)
-            if rule.approval_status != "APPROVED":
+            # 1. Rule approval check (must be explicitly 'approved' or 'APPROVED')
+            status_str = str(getattr(rule, "approval_status", "")).strip().upper()
+            if status_str != "APPROVED":
                 continue
 
-            # 2. Context compatibility
+            # 2. Backing guidance approval check (unreviewed or retired guidance cannot trigger alert)
+            guidance_status = str(getattr(rule, "guidance_approval_status", "approved")).strip().upper()
+            if guidance_status != "APPROVED":
+                continue
+
+            # 3. Context compatibility
             if rule.applicable_context not in (context, "ANY"):
                 continue
 
-            # 3. Expiration / Effective date check
+            # 4. Expiration / Effective date check
             if rule.effective_from and eval_time < rule.effective_from:
                 continue
             if rule.effective_to and eval_time > rule.effective_to:
                 continue
 
-            # 4. Target measurement type filtering
+            # 5. Target measurement type filtering
             if target_types is not None:
                 if not any(t in target_types for t in rule.target_measurement_types):
                     continue
@@ -114,3 +122,4 @@ class ClinicalRuleRegistry:
 
 # Global registry singleton (initialized EMPTY per NASA Space Apps safety contract)
 clinical_rule_registry = ClinicalRuleRegistry()
+

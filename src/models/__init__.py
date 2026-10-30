@@ -5,7 +5,7 @@ from src.models.crew import CrewMember
 from src.models.mission import Mission, MissionMembership
 from src.models.telemetry import HealthMeasurement
 from src.models.wellness import WellnessCheckIn, SymptomCheckIn
-from src.models.clinical import GuidanceSource, ClinicalRule, Assessment
+from src.models.clinical import GuidanceSource, GuidanceDocument, GuidanceReviewRecord, ClinicalRule, Assessment
 from src.models.audit import AuditEvent
 from src.models.user import User
 
@@ -19,6 +19,8 @@ __all__ = [
     "WellnessCheckIn",
     "SymptomCheckIn",
     "GuidanceSource",
+    "GuidanceDocument",
+    "GuidanceReviewRecord",
     "ClinicalRule",
     "Assessment",
     "AuditEvent",

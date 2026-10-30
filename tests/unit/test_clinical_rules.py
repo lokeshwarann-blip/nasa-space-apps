@@ -167,3 +167,4 @@ def test_rule_deterministic_evaluation():
     assert "exceeds test baseline" in finding_high.explanation
     assert finding_high.observed_value == 125.0
     assert "not a diagnosis" in finding_high.limitations
+

@@ -156,6 +156,15 @@ The application runs as a secure, non-root user inside the container and will be
   * `GET /api/v1/assessments/{assessment_id}`: Retrieve a persisted assessment record with full explainability trace (triggered findings, rule versions, clinical rationale, cited guidelines, and SHA-256 input snapshot hash).
   * `GET /api/v1/assessments`: Paginated and filtered query of historical assessments (`crew_id`, `status`, `start_time`, `end_time`, `limit`, `offset`).
   * **Safety Guarantees**: Zero machine learning or generative AI for clinical decisions; production rule registry is empty by default until explicitly configured with approved rules; safe-failure transitions execution errors to `needs_review` rather than falsely declaring health nominal.
+* **Evidence & Guidance Registry:**
+  * `GET /api/v1/guidance`: Versioned guidance query with multi-parameter filtering (`topic`, `indicator`, `hazard`, `mission_context`, `source`, `guidance_type`, `approval_status`). Automatically filters non-approved content and redacts administrative review metadata for crew members.
+  * `GET /api/v1/guidance/{guidance_id}`: Detailed guidance document retrieval with source attribution, limitations, intended use, and review records.
+  * `GET /api/v1/guidance/sources`: List registered authoritative standards (e.g. NASA-STD-3001, HRP).
+  * `POST /api/v1/guidance/sources`: Register a new authoritative guidance source (`FLIGHT_SURGEON` or `ADMIN`).
+  * `POST /api/v1/guidance`: Ingest new guidance document with initial `draft` status (`FLIGHT_SURGEON` or `ADMIN`).
+  * `POST /api/v1/guidance/{guidance_id}/reviews`: Transition guidance through auditable approval states (`draft` -> `under_review` -> `approved` / `rejected` -> `retired`).
+  * `POST /api/v1/guidance/{guidance_id}/supersede`: Supersede guidance with a new version, automatically retiring the prior version and chaining provenance.
+  * **Registry Separation**: Explicitly segregates `EDUCATIONAL` research material, `OPERATIONAL_INSTRUCTION` flight protocols, and `CLINICAL_RULE` decision thresholds. Unreviewed or retired guidance strictly cannot activate clinical rules in the assessment engine.
 
 ---
 
@@ -171,7 +180,12 @@ pytest
 pytest -v
 ```
 
-The 100-test automated suite covers:
+The 114-test automated suite covers:
+- Evidence and guidance registry source provenance, document classification, and auditable approval workflows (`draft`, `under_review`, `approved`, `rejected`, `retired`).
+- Strict separation of educational material from operational flight instructions and clinical rules.
+- Role-based redaction of administrative reviewer metadata and restriction of draft/retired records from crew members.
+- Guidance superseding and version deprecation chains.
+- Gating and prevention of unapproved, under-review, or retired guidance from activating clinical rules.
 - Deterministic, explainable clinical rule engine and registry validation.
 - Assessment status transitions (`assessed_no_findings`, `partially_assessed`, `insufficient_evidence`, `needs_review`, `not_assessed`).
 - Safe failure behavior ensuring rule execution runtime errors never silently report nominal health.

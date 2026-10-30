@@ -69,3 +69,4 @@ class AssessmentListResponse(BaseModel):
     limit: int
     offset: int
     has_more: bool
+
