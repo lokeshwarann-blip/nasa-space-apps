@@ -7,13 +7,11 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import declarative_base
 
 from src.core.config import get_settings
+from src.models.base import Base
 
 logger = logging.getLogger(__name__)
-
-Base = declarative_base()
 
 _engine: AsyncEngine | None = None
 _session_factory: async_sessionmaker[AsyncSession] | None = None
