@@ -117,3 +117,4 @@ class SyncEventRecord(Base):
     crew_member: Mapped["CrewMember"] = relationship(
         "CrewMember",
     )
+

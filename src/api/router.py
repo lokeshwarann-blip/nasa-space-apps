@@ -4,9 +4,11 @@ from src.api.v1.alerts import router as alerts_router
 from src.api.v1.assessments import router as assessments_router
 from src.api.v1.auth import router as auth_router
 from src.api.v1.check_ins import router as check_ins_router
+from src.api.v1.devices import router as devices_router
 from src.api.v1.guidance import router as guidance_router
 from src.api.v1.health import router as health_router
 from src.api.v1.measurements import router as measurements_router
+from src.api.v1.models import router as models_router
 from src.api.v1.sync import router as sync_router
 from src.api.v1.tasks import router as tasks_router
 from src.api.v1.trends import router as trends_router
@@ -25,6 +27,8 @@ api_v1_router.include_router(guidance_router)
 api_v1_router.include_router(tasks_router)
 api_v1_router.include_router(alerts_router)
 api_v1_router.include_router(sync_router)
+api_v1_router.include_router(devices_router)
+api_v1_router.include_router(models_router)
 
 # Dedicated health router for root /health probes (standard Kubernetes / Docker probes)
 root_health_router = APIRouter(prefix="/health")

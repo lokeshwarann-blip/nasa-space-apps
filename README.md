@@ -189,6 +189,12 @@ The application runs as a secure, non-root user inside the container and will be
   * **Idempotency & Conflict Detection**: Database-enforced idempotency via `client_event_id` and SHA-256 canonical payload hashing. Identical retries return `duplicate`; reusing a UUID with conflicting data returns `conflict` and audits the event without PHI leakage.
   * **Partial Batch Success**: Nested transaction isolation (`begin_nested()`) ensures valid events commit even if individual events fail validation.
   * **Temporal Ordering & Clock Skew**: Tolerates up to 15 minutes of future clock drift while accepting historical backlogs. Chronological indexing ensures late-arriving earlier observations never overwrite newer records.
+* **External Device Adapters & Future Analytical Models:**
+  * `GET /api/v1/devices/adapters`: List registered external sensor adapters, supported profiles, and capabilities.
+  * `POST /api/v1/devices/ingest`: Ingest external sensor telemetry via authenticated provider adapters with credential verification, canonical unit conversion, event deduplication, and provenance sanitization.
+  * `GET /api/v1/models/providers`: List registered analytical model providers and validation status.
+  * `POST /api/v1/models/analyze`: Optional analytical inference interface. **Safety Gating:** Disabled by default (`status="not_configured"`), contains zero unvalidated ML weights or synthetic predictions, and analytical outputs are explicitly labeled `EXPERIMENTAL` and forbidden from directly altering clinical decision thresholds.
+  * **Dataset Intake Contract:** Defined in [Data Intake & Dataset Readiness Contract](docs/data_intake_contract.md) specifying minimum sample requirements, clinical ground-truth criteria, IRB authorization, astronaut consent, and population representativeness.
 
 ---
 
@@ -204,7 +210,13 @@ pytest
 pytest -v
 ```
 
-The 140-test automated suite covers:
+The 150-test automated suite covers:
+- Provider-neutral device adapter interface, credential validation, and BOLA enforcement for external sensors.
+- Normalization of raw device payloads into canonical HealthMeasurement records with unit conversion (e.g. °F to °C).
+- Deduplication of incoming device telemetry via unique event IDs.
+- Secure, data-minimized provenance tracking without unbounded raw payload storage.
+- Disabled-by-default analytical model interface returning explicit `not_configured` outcome without mock ML predictions or fake model weights.
+- Experimental output labeling and strict isolation preventing unvalidated models from modifying clinical rule thresholds.
 - Bounded offline batch synchronization (1-100 events) across measurements, wellness check-ins, and symptom reports.
 - Database-enforced idempotency and SHA-256 canonical payload hashing.
 - Rejection of conflicting event UUIDs and auditable conflict logging without personal health information.

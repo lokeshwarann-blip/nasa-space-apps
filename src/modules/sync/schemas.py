@@ -57,3 +57,4 @@ class SyncBatchResponse(BaseModel):
     server_received_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     summary: SyncBatchSummary
     results: list[SyncEventResult]
+

@@ -70,3 +70,4 @@ def test_sync_batch_bounded_limits():
             client_sync_at=now,
             events=[event] * 101,
         )
+

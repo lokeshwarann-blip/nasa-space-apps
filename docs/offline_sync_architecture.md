@@ -100,3 +100,4 @@ flowchart TD
 
 - `sync_event_records` entries are maintained for a minimum **90-day retention window** (configurable up to multi-year deep space transit mission durations).
 - Idempotency records outlive transient retransmission windows to guarantee safe offline batch recovery.
+
