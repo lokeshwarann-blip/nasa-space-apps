@@ -73,3 +73,6 @@ coverage.xml
 # Logs
 *.log
 logs/
+
+# Local Notes
+Project Notes.txt
