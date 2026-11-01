@@ -1,0 +1,150 @@
+.page {
+    min-height: 100vh;
+    min-height: 100svh;
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: #030712;
+    color: #fff;
+}
+
+.card {
+    position: relative;
+    z-index: 2;
+    width: min(100%, 430px);
+    padding: 38px;
+    border: 1px solid rgba(255, 255, 255, 0.17);
+    border-radius: 24px;
+    background: rgba(13, 22, 42, 0.73);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.45);
+}
+
+.logo {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.logo h1 {
+    font-size: 29px;
+    letter-spacing: 7px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.logo p {
+    margin-top: 8px;
+    color: #a5b4cf;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+}
+
+.heading {
+    font-size: 23px;
+    margin-bottom: 8px;
+}
+
+.description {
+    color: #a5b4cf;
+    font-size: 13px;
+    margin-bottom: 24px;
+}
+
+.roleLabel,
+.inputLabel {
+    display: block;
+    color: #cbd5e1;
+    font-size: 12px;
+    margin-bottom: 10px;
+}
+
+.roles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 23px;
+}
+
+.roleButton {
+    padding: 12px 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, .17);
+    background: rgba(255, 255, 255, .05);
+    color: #cbd5e1;
+    cursor: pointer;
+    font-size: 12px;
+    transition: .2s ease;
+}
+
+.roleButton:hover {
+    border-color: #82baff;
+}
+
+.selected {
+    border-color: #80baff;
+    background: rgba(74, 144, 226, .2);
+    color: #fff;
+}
+
+.field {
+    margin-bottom: 17px;
+}
+
+.input {
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, .15);
+    background: rgba(255, 255, 255, .06);
+    color: white;
+    outline: none;
+    font-size: 14px;
+}
+
+.input:focus {
+    border-color: #80baff;
+    box-shadow: 0 0 0 3px rgba(128, 186, 255, .12);
+}
+
+.input::placeholder {
+    color: #75839b;
+}
+
+.submit {
+    width: 100%;
+    padding: 14px;
+    margin-top: 7px;
+    border: none;
+    border-radius: 10px;
+    color: #07111f;
+    background: linear-gradient(100deg, #8bd5ff, #a8baff);
+    font-weight: 700;
+    cursor: pointer;
+    transition: .2s ease;
+}
+
+.submit:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+.note {
+    text-align: center;
+    color: #8291aa;
+    font-size: 10px;
+    margin-top: 20px;
+    line-height: 1.6;
+}
+
+@media (max-width: 480px) {
+    .card {
+        padding: 27px 22px;
+    }
+
+    .logo h1 {
+        font-size: 25px;
+    }
+}
