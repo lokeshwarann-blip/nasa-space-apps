@@ -1,17 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import SolarSystem from "../../components/SolarSystem";
+import { useRouter } from "next/navigation";
+import CelestialSphere from "../../components/ui/celestial-sphere";
+import Spacecraft from "../../components/Spacecraft";
 import styles from "./login.module.css";
 
 export default function LoginPage() {
     const [role, setRole] = useState("Crew Member");
+    const router = useRouter();
 
     return (
         <main className={styles.page}>
-            <SolarSystem />
+            <CelestialSphere
+                hue={220}
+                speed={0.4}
+                zoom={1.2}
+                particleSize={4}
+                className={styles.background}
+            />
+            <div className={styles.spacecraft}>
+                <Spacecraft />
+            </div>
 
-            <section className={styles.card}>
+            <section id="login-card" className={styles.card}>
                 <div className={styles.logo}>
                     <h1>MELIORA</h1>
                     <p>ASTRONAUT HEALTH MONITORING</p>
@@ -46,7 +58,17 @@ export default function LoginPage() {
                     </button>
                 </div>
 
-                <form onSubmit={(event) => event.preventDefault()}>
+                <form
+                    onSubmit={(event) => {
+                        event.preventDefault();
+
+                        if (role === "Crew Member") {
+                            router.push("/dashboard");
+                        } else {
+                            router.push("/flight-surgeon");
+                        }
+                    }}
+                >
                     <div className={styles.field}>
                         <label className={styles.inputLabel} htmlFor="email">
                             Email address
