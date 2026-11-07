@@ -1,94 +1,82 @@
-# NASA Space Apps Challenge — Astronaut Health Monitoring Software Backend
+# NASA Space Apps Challenge — Astronaut Health Monitoring System
 
-High-performance, secure backend architecture designed to monitor astronaut physiological vitals, evaluate telemetry against verified aerospace clinical thresholds (e.g., NASA-STD-3001), and alert flight surgeons during spaceflight missions.
+Autonomous, secure, and resilient health monitoring platform designed to support astronauts during long-duration spaceflight missions and assist terrestrial flight surgeons.
 
 ---
 
 > [!WARNING]
-> **Regulatory Disclaimer:**  
-> This software is an engineering prototype developed for the NASA Space Apps Challenge. It has not undergone clinical certification, FDA clearance, or NASA medical device flight readiness review. No claims of HIPAA compliance, HITECH certification, or aerospace flight surgeon replacement are made.
+> **Regulatory Notice & Challenge Disclaimer:**  
+> This software is an engineering submission developed for the NASA Space Apps Challenge hackathon. It has not undergone clinical certification, FDA clearance, or NASA medical flight readiness review. It does not replace the clinical judgment of an aerospace flight surgeon.
 
 ---
 
-## 1. Architecture Overview
+## 1. Repository Layout
 
-Built as a **modular monolith** adhering strictly to:
-- **FastAPI** application factory (`src.main:create_app`)
-- **Pydantic v2** strict typing, boundary validation, and UTC timezone enforcement
-- **SQLAlchemy 2.0 (async)** with PostgreSQL and Alembic migrations
-- **Decoupled Architecture**: Zero business or clinical logic in route handlers; all domain logic is isolated in services and deterministic rule engines.
-- **Security & Privacy First**: Personal Health Information (PHI) protection, object-level RBAC, redacted logging, Argon2id password hashing, and no synthetic/fabricated medical records in production.
+The repository is organized into distinct domain modules to support multi-service fullstack development:
 
 ```
-src/
-├── main.py              # Application factory & ASGI entry point
-├── api/                 # API routers, middleware, and versioned routes (/api/v1)
-├── core/                # Core configurations, logging, exceptions, database session, security
-├── models/              # SQLAlchemy 2.0 declarative database entities
-├── modules/             # Domain modules: auth, audit, telemetry registry, clinical rules
-└── schemas/             # Pydantic v2 validation models and response DTOs
+nasa-space-apps/
+├── backend/                      # Complete FastAPI backend application
+│   ├── src/                      # Application source code (modular monolith)
+│   │   ├── api/                  # 12 versioned v1 domain routers & health probes
+│   │   ├── core/                 # Config, async database, logging, auth & security
+│   │   ├── models/               # 19 SQLAlchemy 2.0 declarative database entities
+│   │   ├── modules/              # Domain services, deterministic rules, & sync engine
+│   │   └── schemas/              # Pydantic v2 strict data transfer schemas
+│   ├── tests/                    # 150 automated unit & integration tests
+│   ├── migrations/               # Alembic PostgreSQL schema migration chain
+│   ├── docs/                     # Architectural specifications & clinical contracts
+│   │   ├── security_architecture.md    # Threat model, PHI protection, & least privilege
+│   │   ├── data_retention_policy.md    # Audit trails & retention windows
+│   │   ├── offline_sync_architecture.md # Store-and-forward batch reconciliation
+│   │   └── data_intake_contract.md     # Ground-truth criteria & IRB requirements
+│   ├── Dockerfile                # Production multi-stage container (non-root appuser)
+│   ├── requirements.txt          # Production pinned Python dependencies
+│   ├── requirements-dev.txt      # Testing and development dependencies
+│   ├── alembic.ini               # Database migration configuration
+│   ├── pyproject.toml            # Backend build & pytest configuration
+│   └── README.md                 # Detailed backend technical manual & API reference
+│
+├── docker-compose.yml            # Multi-container orchestration (PostgreSQL 16 + API)
+├── pyproject.toml                # Root pytest delegation configuration
+├── .gitignore                    # Git ignore rules
+└── README.md                     # Root project documentation
+```
+
+For complete technical specifications of the backend, including the **50 API endpoints**, authentication models, and deterministic assessment rules, refer to [backend/README.md](backend/README.md).
+
+---
+
+## 2. Quickstart & Deployment
+
+### Option A: Run the Entire Stack via Docker Compose (Recommended)
+
+To launch the backend API and a managed PostgreSQL 16 database with healthchecks:
+
+```bash
+docker compose up --build -d
+```
+
+The service will start and expose:
+- **API Root / Health:** `http://localhost:8000/health/live`
+- **Interactive Swagger UI:** `http://localhost:8000/docs`
+- **ReDoc Specification:** `http://localhost:8000/redoc`
+
+To shut down:
+```bash
+docker compose down
 ```
 
 ---
 
-## 2. Authentication & Authorization Model
+### Option B: Local Backend Development
 
-### Logical Roles & Permission Scopes
-* **Crew Member (`CREW_MEMBER`):**
-  * Access restricted strictly to their personal health records, wellness reports, and assigned missions.
-  * Attempting to query another astronaut's records (via guessed or supplied UUIDs) fails with `403 Forbidden` (Broken Object-Level Authorization / BOLA prevention).
-* **Medical Reviewer / Flight Surgeon (`FLIGHT_SURGEON`):**
-  * Access permitted only for crew members explicitly included within their authorized scope (`assigned_crew_ids`).
-  * Attempting to inspect unassigned crew records returns `403 Forbidden`.
-* **System Administrator (`ADMIN`):**
-  * Manages accounts and system settings.
-  * **Least-Privilege Enforcement:** Admins do *not* have automatic, unrestricted access to clinical health records unless explicitly assigned as a medical officer for that subject.
+1. **Navigate to the backend directory:**
+   ```bash
+   cd backend
+   ```
 
-### Cryptographic Security Specifications
-* **Token Standard:** RFC 7519 JSON Web Tokens signed with HMAC-SHA256 (`HS256`).
-* **Claims Validated:** Cryptographic signature, expiration (`exp`), issuer (`iss`), audience (`aud`), subject (`sub`), and role (`role`).
-* **Password Hashing:** Argon2id with unique random salting (OWASP recommended parameters).
-* **Request Limits:** Payload size limiter rejects oversized bodies exceeding 1 MB (`HTTP 413 Content Too Large`).
-* **Data Sanitization:** Strict audit logger redacting credentials, tokens, and raw medical telemetry before persisting audit events.
-
-### Security Documentation & Policies
-* [Security Architecture & Threat Model](docs/security_architecture.md)
-* [Data Retention & Deletion Policy](docs/data_retention_policy.md)
-
----
-
-## 3. Environment Variables
-
-Copy `.env.example` to `.env` to configure local variables:
-
-| Variable | Description | Default |
-| :--- | :--- | :--- |
-| `PROJECT_NAME` | Service name | `NASA Space Apps - Astronaut Health Monitor` |
-| `ENVIRONMENT` | Environment (`development`, `staging`, `production`, `testing`) | `development` |
-| `DEBUG` | Enable debug logs | `false` |
-| `LOG_LEVEL` | Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) | `INFO` |
-| `API_V1_PREFIX` | Versioned route prefix | `/api/v1` |
-| `POSTGRES_SERVER` | PostgreSQL hostname | `localhost` |
-| `POSTGRES_PORT` | PostgreSQL port | `5432` |
-| `POSTGRES_USER` | PostgreSQL username | `postgres` |
-| `POSTGRES_PASSWORD` | PostgreSQL password | `postgres` |
-| `POSTGRES_DB` | PostgreSQL database name | `astronaut_health` |
-| `SECRET_KEY` | Cryptographic secret for signing tokens (min 32 chars) | Required |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | JWT token validity window | `60` |
-| `JWT_ISSUER` | Expected JWT issuer claim | `nasa-space-apps-auth` |
-| `JWT_AUDIENCE` | Expected JWT audience claim | `nasa-space-apps-api` |
-
----
-
-## 4. Quickstart & Local Setup
-
-### Prerequisites
-- Python 3.12+
-- Docker and Docker Compose (recommended for PostgreSQL)
-
-### Option A: Local Python Virtual Environment
-
-1. **Create and activate a virtual environment:**
+2. **Create and activate a virtual environment:**
    ```bash
    python -m venv venv
    # On Windows (PowerShell):
@@ -97,165 +85,48 @@ Copy `.env.example` to `.env` to configure local variables:
    source venv/bin/activate
    ```
 
-2. **Install dependencies:**
+3. **Install dependencies:**
    ```bash
    pip install -r requirements-dev.txt
    ```
 
-3. **Configure environment:**
+4. **Configure environment:**
    ```bash
    cp .env.example .env
    ```
 
-4. **Start PostgreSQL via Docker Compose:**
+5. **Run database migrations:**
    ```bash
-   docker compose up -d db
+   alembic upgrade head
    ```
 
-5. **Run the FastAPI development server:**
+6. **Start the development server:**
    ```bash
-   python src/main.py
-   # Or via uvicorn directly:
    uvicorn src.main:app --reload --port 8000
    ```
 
-### Option B: Full Containerized Stack
-
-```bash
-docker compose up --build
-```
-
-The application runs as a secure, non-root user inside the container and will be accessible at `http://localhost:8000`.
-
 ---
 
-## 5. API Endpoints & Health Probes
+## 3. Running Automated Tests
 
-* **Interactive Swagger UI:** [http://localhost:8000/docs](http://localhost:8000/docs) (available in `development` and `staging`)
-* **ReDoc Documentation:** [http://localhost:8000/redoc](http://localhost:8000/redoc)
-* **Liveness Probe:** `GET /health/live` (returns `200 OK` when process is running)
-* **Readiness Probe:** `GET /health/ready` (probes PostgreSQL database connectivity)
-* **Authentication:** `POST /api/v1/auth/token` (Argon2id credential verification and JWT issuance)
-* **Identity Profile:** `GET /api/v1/auth/me` (returns verified claims and permissions)
-* **Object Access Verification:** `GET /api/v1/auth/crew/{target_crew_member_id}/access-verification`
-* **Health Measurements:**
-  * `POST /api/v1/measurements`: Ingest objective physiological measurements (heart rate, blood pressure, temperature, SpO₂, glucose). Explicitly converts units (e.g. °F to °C) and preserves original representation and sensor provenance.
-  * `GET /api/v1/measurements`: Paginated and filtered query (`crew_id`, `measurement_type`, `start_time`, `end_time`, `limit`, `offset`) with deterministic ordering.
-  * `GET /api/v1/measurements/{measurement_id}`: Single measurement record inspection.
-  * `POST /api/v1/measurements/{measurement_id}/invalidate`: Marks measurement as invalidated with an auditable reason; preserves historical observation without deletion or rewriting.
-* **Crew Check-Ins:**
-  * `POST /api/v1/check-ins`: Submits subjective self-report check-ins (`WELLNESS` ratings 1-5 or `SYMPTOM` reports with controlled vocabulary).
-  * `GET /api/v1/check-ins`: Paginated and filtered retrieval across check-in categories.
-  * `GET /api/v1/check-ins/{check_in_id}`: Single check-in inspection.
-* **Longitudinal Trends & Empirical Baselines:**
-  * `GET /api/v1/trends/{measurement_type}`: Longitudinal trend series calculation over bounded windows with deterministic sample statistics (count, min, max, mean, median, sample standard deviation), temporal gap detection, data quality metrics, and outlier labeling.
-  * `GET /api/v1/trends/{measurement_type}/summary`: Condensed statistical summary without raw observation points.
-  * `GET /api/v1/baselines/{measurement_type}`: Empirical personal baseline calculated solely from actual historical observations (minimum 10 samples required; returns `baseline_status='UNAVAILABLE'` if insufficient; never substitutes population baselines or synthetic data).
-* **Explainable Health Assessment Engine:**
-  * `POST /api/v1/assessments`: Request an explainable clinical assessment evaluated strictly by versioned, approved deterministic rules. Verifies input data provenance, unit conformity, freshness, and temporal validity.
-  * `GET /api/v1/assessments/{assessment_id}`: Retrieve a persisted assessment record with full explainability trace (triggered findings, rule versions, clinical rationale, cited guidelines, and SHA-256 input snapshot hash).
-  * `GET /api/v1/assessments`: Paginated and filtered query of historical assessments (`crew_id`, `status`, `start_time`, `end_time`, `limit`, `offset`).
-  * **Safety Guarantees**: Zero machine learning or generative AI for clinical decisions; production rule registry is empty by default until explicitly configured with approved rules; safe-failure transitions execution errors to `needs_review` rather than falsely declaring health nominal.
-* **Evidence & Guidance Registry:**
-  * `GET /api/v1/guidance`: Versioned guidance query with multi-parameter filtering (`topic`, `indicator`, `hazard`, `mission_context`, `source`, `guidance_type`, `approval_status`). Automatically filters non-approved content and redacts administrative review metadata for crew members.
-  * `GET /api/v1/guidance/{guidance_id}`: Detailed guidance document retrieval with source attribution, limitations, intended use, and review records.
-  * `GET /api/v1/guidance/sources`: List registered authoritative standards (e.g. NASA-STD-3001, HRP).
-  * `POST /api/v1/guidance/sources`: Register a new authoritative guidance source (`FLIGHT_SURGEON` or `ADMIN`).
-  * `POST /api/v1/guidance`: Ingest new guidance document with initial `draft` status (`FLIGHT_SURGEON` or `ADMIN`).
-  * `POST /api/v1/guidance/{guidance_id}/reviews`: Transition guidance through auditable approval states (`draft` -> `under_review` -> `approved` / `rejected` -> `retired`).
-  * `POST /api/v1/guidance/{guidance_id}/supersede`: Supersede guidance with a new version, automatically retiring the prior version and chaining provenance.
-  * **Registry Separation**: Explicitly segregates `EDUCATIONAL` research material, `OPERATIONAL_INSTRUCTION` flight protocols, and `CLINICAL_RULE` decision thresholds. Unreviewed or retired guidance strictly cannot activate clinical rules in the assessment engine.
-* **Wellness Tasks & Reminders:**
-  * `GET /api/v1/tasks/definitions`: List reusable task blueprints and recurrence configurations.
-  * `POST /api/v1/tasks/definitions`: Configure reusable task definition (`FLIGHT_SURGEON` or `ADMIN`).
-  * `GET /api/v1/tasks`: List assigned task instances with due windows. Crew members view strictly their own tasks.
-  * `POST /api/v1/tasks`: Schedule a task instance with bounded due window for an astronaut (`FLIGHT_SURGEON` or `ADMIN`).
-  * `GET /api/v1/tasks/{task_id}`: Single task instance details and audit trail.
-  * `POST /api/v1/tasks/{task_id}/complete`: Fulfill task instance idempotently, linking telemetry or check-in references.
-  * `POST /api/v1/tasks/{task_id}/cancel`: Cancel task assignment with clinical justification (`FLIGHT_SURGEON` or `ADMIN`).
-* **Clinical Alerts Lifecycle:**
-  * `GET /api/v1/alerts`: Query clinical alerts filtered by crew member, status, priority, indicator, and event window.
-  * `POST /api/v1/alerts`: Ingest/trigger alert instance with deterministic idempotency deduplication for repeated findings.
-  * `GET /api/v1/alerts/{alert_id}`: Alert details with complete transition audit trail.
-  * `POST /api/v1/alerts/{alert_id}/acknowledge`: Acknowledge open alert (assigned astronaut or medical officer).
-  * `POST /api/v1/alerts/{alert_id}/assign`: Assign alert to designated medical reviewer (`FLIGHT_SURGEON` or `ADMIN`).
-  * `POST /api/v1/alerts/{alert_id}/resolve`: Record clinical resolution with documented justification (`FLIGHT_SURGEON` or `ADMIN`).
-  * `POST /api/v1/alerts/{alert_id}/dismiss`: Dismiss alert with auditable rationale (`FLIGHT_SURGEON` or `ADMIN`).
-  * `POST /api/v1/alerts/{alert_id}/escalate`: Escalate alert to higher tier operational destinations, accurately recording `NO_DELIVERY_PROVIDER` without false confirmation.
-  * **Safety Guarantees**: Delayed telemetry is explicitly flagged (`is_delayed=True`) and historical event time is preserved separately from alert creation time to avoid misclassifying delayed syncs as sudden acute emergencies.
-* **Offline Synchronization API:**
-  * `POST /api/v1/sync`: Ingests bounded batches (1-100 events) of physiological measurements, wellness ratings, and symptom check-ins recorded offline during loss-of-signal (LOS) periods.
-  * `GET /api/v1/sync/status/{client_event_id}`: Polls synchronization status and reconciliation outcome for a specific client event UUID.
-  * **Idempotency & Conflict Detection**: Database-enforced idempotency via `client_event_id` and SHA-256 canonical payload hashing. Identical retries return `duplicate`; reusing a UUID with conflicting data returns `conflict` and audits the event without PHI leakage.
-  * **Partial Batch Success**: Nested transaction isolation (`begin_nested()`) ensures valid events commit even if individual events fail validation.
-  * **Temporal Ordering & Clock Skew**: Tolerates up to 15 minutes of future clock drift while accepting historical backlogs. Chronological indexing ensures late-arriving earlier observations never overwrite newer records.
-* **External Device Adapters & Future Analytical Models:**
-  * `GET /api/v1/devices/adapters`: List registered external sensor adapters, supported profiles, and capabilities.
-  * `POST /api/v1/devices/ingest`: Ingest external sensor telemetry via authenticated provider adapters with credential verification, canonical unit conversion, event deduplication, and provenance sanitization.
-  * `GET /api/v1/models/providers`: List registered analytical model providers and validation status.
-  * `POST /api/v1/models/analyze`: Optional analytical inference interface. **Safety Gating:** Disabled by default (`status="not_configured"`), contains zero unvalidated ML weights or synthetic predictions, and analytical outputs are explicitly labeled `EXPERIMENTAL` and forbidden from directly altering clinical decision thresholds.
-  * **Dataset Intake Contract:** Defined in [Data Intake & Dataset Readiness Contract](docs/data_intake_contract.md) specifying minimum sample requirements, clinical ground-truth criteria, IRB authorization, astronaut consent, and population representativeness.
+The test suite contains **150 automated tests** covering unit logic, rule determinism, BOLA security boundaries, and end-to-end API endpoints.
 
----
-
-## 6. Running Automated Tests
-
-Run the test suite using `pytest`:
+You can execute tests either from the project root or from inside `backend/`:
 
 ```bash
-# Run all unit and integration tests
+# From project root:
 pytest
 
-# Run with verbose output
+# Or from inside backend:
+cd backend
 pytest -v
 ```
 
-The 150-test automated suite covers:
-- Provider-neutral device adapter interface, credential validation, and BOLA enforcement for external sensors.
-- Normalization of raw device payloads into canonical HealthMeasurement records with unit conversion (e.g. °F to °C).
-- Deduplication of incoming device telemetry via unique event IDs.
-- Secure, data-minimized provenance tracking without unbounded raw payload storage.
-- Disabled-by-default analytical model interface returning explicit `not_configured` outcome without mock ML predictions or fake model weights.
-- Experimental output labeling and strict isolation preventing unvalidated models from modifying clinical rule thresholds.
-- Bounded offline batch synchronization (1-100 events) across measurements, wellness check-ins, and symptom reports.
-- Database-enforced idempotency and SHA-256 canonical payload hashing.
-- Rejection of conflicting event UUIDs and auditable conflict logging without personal health information.
-- Partial batch success and atomic savepoint isolation across events.
-- Clock-skew future timestamp limits (15-minute tolerance) and reconciliation of delayed, out-of-order telemetry.
-- Task definition recurrence configuration and bounded due window validation.
-- Least-privilege authorization and BOLA prevention for task assignments and cancellations.
-- Idempotent task completion without duplicate audit records.
-- Clinical alert deduplication and idempotency key enforcement for repeated findings.
-- Controlled alert lifecycle state transitions (`open` -> `acknowledged` -> `assigned` -> `resolved` / `dismissed`) and rejection of invalid jumps.
-- Accurate reporting of unconfigured notification delivery providers (`NO_DELIVERY_PROVIDER`) upon alert escalation.
-- Delayed-event handling distinguishing historical telemetry from acute emergencies.
-- Evidence and guidance registry source provenance, document classification, and auditable approval workflows (`draft`, `under_review`, `approved`, `rejected`, `retired`).
-- Strict separation of educational material from operational flight instructions and clinical rules.
-- Role-based redaction of administrative reviewer metadata and restriction of draft/retired records from crew members.
-- Guidance superseding and version deprecation chains.
-- Gating and prevention of unapproved, under-review, or retired guidance from activating clinical rules.
-- Deterministic, explainable clinical rule engine and registry validation.
-- Assessment status transitions (`assessed_no_findings`, `partially_assessed`, `insufficient_evidence`, `needs_review`, `not_assessed`).
-- Safe failure behavior ensuring rule execution runtime errors never silently report nominal health.
-- Cryptographic reproducibility hashing (SHA-256) capturing input observation IDs and rule versions.
-- Data freshness threshold enforcement and stale observation detection.
-- Object-level authorization for assessment generation and retrieval (BOLA prevention).
-- Longitudinal trend calculations and descriptive statistics (count, min, max, arithmetic mean, median, sample standard deviation).
-- Data quality evaluation, observation freshness, and coverage gap detection.
-- Statistical outlier detection labeled strictly as statistical observations (not medical diagnoses).
-- Empirical personal baseline calculation with strict minimum sample requirements and `UNAVAILABLE` fallback.
-- Ingestion of objective biometric measurements and subjective check-ins.
-- Explicit unit conversions (e.g., Fahrenheit to Celsius) and provenance preservation.
-- Acceptance of clinically concerning but physiologically valid values (e.g. tachycardia).
-- Rejection of non-finite values (NaN/Infinity), unsupported types, and incompatible units.
-- Timezone-aware UTC enforcement, clock skew future detection, and stale timestamp rejection.
-- Duplicate submission detection with `409 Conflict`.
-- Broken Object-Level Authorization (BOLA) prevention and cross-crew data inspection blocks.
-- Pagination, time-range filtering, and deterministic ordering.
-- Measurement invalidation workflows and audit trail preservation.
-- Token signing, claims validation, expiration, and malformed token rejection.
-- Password hashing with Argon2id and random salt generation.
-- Role escalation prevention and object-level authorization.
-- Request payload size limiter (HTTP 413).
-- Typed measurement registry and database transaction isolation.
-- Liveness and readiness health probes.
+---
+
+## 4. Key Architectural Guarantees
+
+- **Personal Health Information (PHI) Protection:** Astronaut vitals are isolated with object-level authorization (BOLA prevention). Administrators cannot view clinical records without explicit assignment.
+- **Store-and-Forward Offline Resilience:** Intermittent spaceflight connectivity (loss-of-signal / LOS) is accommodated through a bounded, idempotent batch synchronization engine.
+- **Deterministic & Explainable Assessments:** Health evaluations are performed strictly by versioned, approved deterministic rules (citing standards like NASA-STD-3001). Machine learning models are never used to make automated clinical decisions without review.
+- **Provider-Neutral Sensor Adapters:** External telemetry is normalized and unit-converted into canonical records while tracking complete device provenance.

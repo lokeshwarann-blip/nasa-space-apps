@@ -20,8 +20,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Create a non-root system user and group
 RUN groupadd -r appuser && useradd -r -g appuser -d /app -s /sbin/nologin appuser
 
-# Copy application source code
+# Copy application source code and migrations
 COPY src/ ./src/
+COPY migrations/ ./migrations/
 COPY alembic.ini* ./
 
 # Set ownership of the application directory to the non-root user
