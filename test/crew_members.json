@@ -1,0 +1,146 @@
+[
+  {
+    "id": "c1111111-1111-4111-8111-111111111111",
+    "crew_id": "CREW-001",
+    "status": "ACTIVE",
+    "profile_metadata": {
+      "callsign": "Astra-Lead",
+      "flight_role": "COMMANDER",
+      "specialization": "Orbital Mechanics & Command Systems",
+      "assigned_mission": "ARTEMIS-III",
+      "operational_environment": "LUNAR_SURFACE",
+      "cumulative_eva_hours": 28.5,
+      "spaceflight_missions_count": 3,
+      "radiation_risk_tier": "STANDARD",
+      "baseline_vitals_summary": {
+        "resting_heart_rate_bpm": 62,
+        "blood_pressure_systolic_mmhg": 118,
+        "blood_pressure_diastolic_mmhg": 76,
+        "core_temperature_celsius": 36.8,
+        "oxygen_saturation_percent": 98.5
+      }
+    },
+    "created_at": "2026-01-15T00:00:00Z",
+    "updated_at": "2026-10-01T12:00:00Z"
+  },
+  {
+    "id": "c2222222-2222-4222-8222-222222222222",
+    "crew_id": "CREW-002",
+    "status": "ACTIVE",
+    "profile_metadata": {
+      "callsign": "Vanguard",
+      "flight_role": "PILOT",
+      "specialization": "Propulsion & Atmospheric Descent Systems",
+      "assigned_mission": "ARTEMIS-III",
+      "operational_environment": "LUNAR_SURFACE",
+      "cumulative_eva_hours": 14.2,
+      "spaceflight_missions_count": 2,
+      "radiation_risk_tier": "STANDARD",
+      "baseline_vitals_summary": {
+        "resting_heart_rate_bpm": 68,
+        "blood_pressure_systolic_mmhg": 122,
+        "blood_pressure_diastolic_mmhg": 78,
+        "core_temperature_celsius": 36.9,
+        "oxygen_saturation_percent": 98.0
+      }
+    },
+    "created_at": "2026-01-15T00:00:00Z",
+    "updated_at": "2026-10-01T12:00:00Z"
+  },
+  {
+    "id": "c3333333-3333-4333-8333-333333333333",
+    "crew_id": "CREW-003",
+    "status": "ACTIVE",
+    "profile_metadata": {
+      "callsign": "Caduceus",
+      "flight_role": "MEDICAL_OFFICER",
+      "specialization": "Aerospace Medicine & Human Physiology",
+      "assigned_mission": "ARTEMIS-III",
+      "operational_environment": "LUNAR_SURFACE",
+      "cumulative_eva_hours": 8.0,
+      "spaceflight_missions_count": 1,
+      "radiation_risk_tier": "STANDARD",
+      "baseline_vitals_summary": {
+        "resting_heart_rate_bpm": 65,
+        "blood_pressure_systolic_mmhg": 115,
+        "blood_pressure_diastolic_mmhg": 74,
+        "core_temperature_celsius": 36.7,
+        "oxygen_saturation_percent": 99.0
+      }
+    },
+    "created_at": "2026-02-01T00:00:00Z",
+    "updated_at": "2026-10-01T12:00:00Z"
+  },
+  {
+    "id": "c4444444-4444-4444-8444-444444444444",
+    "crew_id": "CREW-004",
+    "status": "ACTIVE",
+    "profile_metadata": {
+      "callsign": "Kepler",
+      "flight_role": "MISSION_SPECIALIST",
+      "specialization": "Lunar Geology & In-Situ Resource Utilization",
+      "assigned_mission": "ARTEMIS-III",
+      "operational_environment": "LUNAR_SURFACE",
+      "cumulative_eva_hours": 22.0,
+      "spaceflight_missions_count": 1,
+      "radiation_risk_tier": "STANDARD",
+      "baseline_vitals_summary": {
+        "resting_heart_rate_bpm": 58,
+        "blood_pressure_systolic_mmhg": 112,
+        "blood_pressure_diastolic_mmhg": 72,
+        "core_temperature_celsius": 36.6,
+        "oxygen_saturation_percent": 98.8
+      }
+    },
+    "created_at": "2026-02-01T00:00:00Z",
+    "updated_at": "2026-10-01T12:00:00Z"
+  },
+  {
+    "id": "c5555555-5555-4555-8555-555555555555",
+    "crew_id": "CREW-005",
+    "status": "ACTIVE",
+    "profile_metadata": {
+      "callsign": "Newton",
+      "flight_role": "FLIGHT_ENGINEER",
+      "specialization": "Environmental Control & Life Support Systems (ECLSS)",
+      "assigned_mission": "ISS-EXP-72",
+      "operational_environment": "MICROGRAVITY",
+      "cumulative_eva_hours": 19.5,
+      "spaceflight_missions_count": 2,
+      "radiation_risk_tier": "ELEVATED_MONITORING",
+      "baseline_vitals_summary": {
+        "resting_heart_rate_bpm": 70,
+        "blood_pressure_systolic_mmhg": 124,
+        "blood_pressure_diastolic_mmhg": 80,
+        "core_temperature_celsius": 37.0,
+        "oxygen_saturation_percent": 97.5
+      }
+    },
+    "created_at": "2026-03-10T00:00:00Z",
+    "updated_at": "2026-10-15T08:00:00Z"
+  },
+  {
+    "id": "c6666666-6666-4666-8666-666666666666",
+    "crew_id": "CREW-006",
+    "status": "RETIRED",
+    "profile_metadata": {
+      "callsign": "Pioneer",
+      "flight_role": "MISSION_SPECIALIST",
+      "specialization": "Avionics & Deep Space Telecommunications",
+      "assigned_mission": "ARTEMIS-II",
+      "operational_environment": "EARTH_1G",
+      "cumulative_eva_hours": 35.0,
+      "spaceflight_missions_count": 4,
+      "radiation_risk_tier": "POST_FLIGHT_SURVEILLANCE",
+      "baseline_vitals_summary": {
+        "resting_heart_rate_bpm": 64,
+        "blood_pressure_systolic_mmhg": 120,
+        "blood_pressure_diastolic_mmhg": 78,
+        "core_temperature_celsius": 36.8,
+        "oxygen_saturation_percent": 98.2
+      }
+    },
+    "created_at": "2025-06-01T00:00:00Z",
+    "updated_at": "2026-09-01T10:00:00Z"
+  }
+]
