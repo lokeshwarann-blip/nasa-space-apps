@@ -216,6 +216,10 @@ export default function Dashboard() {
     const [modal, setModal] = useState(false);
     const [mood, setMood] = useState(4);
     const [fatigue, setFatigue] = useState(2);
+    const [sleepDuration, setSleepDuration] = useState("8");
+    const [sleepQuality, setSleepQuality] = useState(4);
+    const [stress, setStress] = useState(2);
+    const [savingCheckIn, setSavingCheckIn] = useState(false);
     const [toast, setToast] = useState("");
     const [now, setNow] = useState("");
     const firstBtn = useRef<HTMLButtonElement>(null);
@@ -254,9 +258,65 @@ export default function Dashboard() {
         setToast("Alert acknowledged (demo)");
     }
 
-    function saveCheckIn() {
-        setModal(false);
-        setToast("Check-in recorded on this screen only. It is not sent to the backend yet.");
+    async function saveCheckIn() {
+        if (savingCheckIn) return;
+
+        const token = sessionStorage.getItem("meliora_access_token");
+
+        if (!token) {
+            setToast("Session expired. Please log in again.");
+            return;
+        }
+
+        const sleepHours = Number(sleepDuration);
+
+        if (!Number.isFinite(sleepHours) || sleepHours < 0 || sleepHours > 24) {
+            setToast("Sleep duration must be between 0 and 24 hours.");
+            return;
+        }
+
+        setSavingCheckIn(true);
+
+        try {
+            const API_URL =
+                process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+
+            const response = await fetch(`${API_URL}/api/v1/check-ins`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    check_in_type: "WELLNESS",
+                    sleep_duration_hours: sleepHours,
+                    sleep_quality: sleepQuality,
+                    mood,
+                    stress,
+                    fatigue,
+                    measured_at: new Date().toISOString(),
+                    provenance: { source: "MELIORA_WEB_APP" },
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                const message =
+                    typeof errorData?.detail === "string"
+                        ? errorData.detail
+                        : `Server rejected the check-in (${response.status}).`;
+
+                setToast(message);
+                return;
+            }
+
+            setModal(false);
+            setToast("Wellness check-in submitted successfully.");
+        } catch {
+            setToast("Could not reach the backend. Check that the server is running.");
+        } finally {
+            setSavingCheckIn(false);
+        }
     }
 
     /* ----- reusable blocks ----- */
@@ -591,36 +651,93 @@ export default function Dashboard() {
                     </div>
                 </section>
             </div>
-
             {/* CHECK-IN MODAL */}
             {modal && (
-                <div className={styles.overlay} onClick={() => setModal(false)}>
-                    <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="ci-title" onClick={(e) => e.stopPropagation()}>
+                <div className={styles.overlay} onClick={() => !savingCheckIn && setModal(false)}>
+                    <div
+                        className={styles.modal}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="ci-title"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className={styles.modalHead}>
                             <h3 id="ci-title">How are you today?</h3>
-                            <button type="button" className={styles.iconBtn} onClick={() => setModal(false)} aria-label="Close"><Icon name="close" /></button>
+                            <button
+                                type="button"
+                                className={styles.iconBtn}
+                                onClick={() => !savingCheckIn && setModal(false)}
+                                aria-label="Close"
+                            >
+                                <Icon name="close" />
+                            </button>
                         </div>
-                        {([["Mood", mood, setMood], ["Fatigue", fatigue, setFatigue]] as const).map(([label, val, set], row) => (
+
+                        <div className={styles.scaleRow}>
+                            <label htmlFor="sleep-duration">
+                                Sleep duration <small>(hours, 0–24)</small>
+                            </label>
+                            <input
+                                id="sleep-duration"
+                                type="number"
+                                min="0"
+                                max="24"
+                                step="0.5"
+                                value={sleepDuration}
+                                onChange={(e) => setSleepDuration(e.target.value)}
+                                className={styles.sleepInput}
+                            />
+                        </div>
+
+                        {(
+                            [
+                                ["Mood", mood, setMood],
+                                ["Sleep quality", sleepQuality, setSleepQuality],
+                                ["Stress", stress, setStress],
+                                ["Fatigue", fatigue, setFatigue],
+                            ] as const
+                        ).map(([label, val, set], row) => (
                             <div key={label} className={styles.scaleRow}>
                                 <span>{label} <small>1 low, 5 high</small></span>
                                 <div className={styles.scale} role="group" aria-label={label}>
                                     {[1, 2, 3, 4, 5].map((n) => (
-                                        <button key={n} type="button" ref={row === 0 && n === 1 ? firstBtn : undefined}
-                                            aria-pressed={val === n} onClick={() => set(n)}
-                                            className={cx(styles.scaleBtn, val === n && styles.scaleOn)}>{n}</button>
+                                        <button
+                                            key={n}
+                                            type="button"
+                                            ref={row === 0 && n === 1 ? firstBtn : undefined}
+                                            aria-pressed={val === n}
+                                            onClick={() => set(n)}
+                                            className={cx(styles.scaleBtn, val === n && styles.scaleOn)}
+                                        >
+                                            {n}
+                                        </button>
                                     ))}
                                 </div>
                             </div>
                         ))}
+
                         <div className={styles.modalActions}>
-                            <button type="button" className={styles.ghostBtn} onClick={() => setModal(false)}>Cancel</button>
-                            <button type="button" className={styles.cta} onClick={saveCheckIn}>Save check-in</button>
+                            <button
+                                type="button"
+                                className={styles.ghostBtn}
+                                onClick={() => setModal(false)}
+                                disabled={savingCheckIn}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                className={styles.cta}
+                                onClick={saveCheckIn}
+                                disabled={savingCheckIn}
+                            >
+                                {savingCheckIn ? "Submitting..." : "Save check-in"}
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {toast && <div className={styles.toast} role="status">{toast}</div>}
         </main>
     );
 }
