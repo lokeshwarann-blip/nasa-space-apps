@@ -1,4 +1,6 @@
+
 import uuid
+
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -61,20 +63,30 @@ async def get_current_user_profile(
     }
 
 
+@router.get(
+    "/users",
+    response_model=list[UserRead],
+    summary="List Registered User Accounts",
+    description="Returns registered account information. Restricted to ADMIN.",
+)
+async def list_user_accounts(
+    session: AsyncSession = Depends(get_db),
+    identity: AuthenticatedIdentity = Depends(require_roles("ADMIN")),
+):
+    return await AuthService.list_users(session=session)
+
+
 @router.post(
     "/users",
     response_model=UserRead,
     status_code=status.HTTP_201_CREATED,
     summary="Create User Account",
-    description="Creates a new account with hashed password. Restricted to ADMIN (or system bootstrap).",
+    description="Creates a new account with hashed password. Restricted to ADMIN.",
 )
 async def create_user_account(
     user_in: UserCreate,
     session: AsyncSession = Depends(get_db),
-    identity: AuthenticatedIdentity | None = Depends(
-        # Optional identity allows bootstrapping the initial admin user
-        lambda: None
-    ),
+    identity: AuthenticatedIdentity = Depends(require_roles("ADMIN")),
 ):
     new_user = await AuthService.create_user(
         session=session,

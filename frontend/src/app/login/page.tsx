@@ -4,7 +4,6 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import CelestialSphere from "../../components/ui/celestial-sphere";
-import Spacecraft from "../../components/Spacecraft";
 import styles from "./login.module.css";
 
 const API_URL =
@@ -69,9 +68,9 @@ export default function LoginPage() {
                     : role === "Flight Surgeon"
                         ? "FLIGHT_SURGEON"
                         : "ADMIN";
-              if (identity.role !== expectedRole) {
-               throw new Error("Your account does not match the selected role.");
-           }
+            if (identity.role !== expectedRole) {
+                throw new Error("Your account does not match the selected role.");
+            }
 
             // 4. Save the session for subsequent API requests
             sessionStorage.setItem(
@@ -114,9 +113,7 @@ export default function LoginPage() {
                 className={styles.background}
             />
 
-            <div className={styles.spacecraft}>
-                <Spacecraft />
-            </div>
+
 
             <section id="login-card" className={styles.card}>
                 <div className={styles.logo}>

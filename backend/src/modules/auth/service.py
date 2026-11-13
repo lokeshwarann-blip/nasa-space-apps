@@ -1,5 +1,7 @@
+
 import uuid
 from typing import Any
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,23 +39,30 @@ class AuthService:
     """Authentication and Authorization domain service."""
 
     @staticmethod
+    async def list_users(session: AsyncSession) -> list[User]:
+        """Return registered user accounts for the Admin account-management view."""
+        result = await session.execute(
+            select(User).order_by(User.username.asc())
+        )
+        return list(result.scalars().all())
+
+    @staticmethod
     async def create_user(
         session: AsyncSession,
         user_in: UserCreate,
         requesting_actor: AuthenticatedIdentity | None = None,
     ) -> User:
         """Creates a new user account with secure password hashing and authorization checks."""
-        # Check if any users exist in the system
         count_result = await session.execute(select(func.count(User.id)))
         user_count = count_result.scalar() or 0
 
-        # If users exist, only an ADMIN can create new users
         if user_count > 0:
             if requesting_actor is None or requesting_actor.role != "ADMIN":
                 raise AuthorizationError("Only administrators are permitted to create user accounts.")
 
-        # Check for duplicate username
-        existing = await session.execute(select(User).where(User.username == user_in.username))
+        existing = await session.execute(
+            select(User).where(User.username == user_in.username)
+        )
         if existing.scalar_one_or_none() is not None:
             raise AppException(
                 message=f"Username '{user_in.username}' is already taken.",
@@ -61,7 +70,6 @@ class AuthService:
                 status_code=400,
             )
 
-        # Enforce role constraints
         if user_in.role == "CREW_MEMBER" and not user_in.crew_member_id:
             raise AppException(
                 message="CREW_MEMBER role requires an associated crew_member_id.",
@@ -102,7 +110,7 @@ class AuthService:
         target_crew_member_id: str | uuid.UUID,
     ) -> bool:
         """Enforces strict Object-Level Authorization (BOLA prevention) across all roles.
-        
+
         Rules:
           - CREW_MEMBER: Can only access records matching their personal crew_member_id.
           - FLIGHT_SURGEON: Can only access records of crew explicitly in their assigned_crew_ids.
@@ -120,7 +128,6 @@ class AuthService:
             return target_str in assigned_lower
 
         if identity.role == "ADMIN":
-            # Least-privilege principle: Admins have zero automatic access to clinical health records!
             assigned_lower = [str(cid).lower() for cid in identity.assigned_crew_ids]
             return target_str in assigned_lower
 
@@ -138,7 +145,6 @@ class AuthService:
         has_access = cls.verify_object_level_crew_access(identity, target_crew_member_id)
 
         if not has_access:
-            # Audit the authorization failure
             await record_audit_event(
                 session=session,
                 actor=identity.username,
@@ -154,4 +160,3 @@ class AuthService:
             raise AuthorizationError(
                 f"User '{identity.username}' is not authorized to access health records for crew '{target_crew_member_id}'."
             )
-

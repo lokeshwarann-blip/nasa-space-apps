@@ -1,13 +1,14 @@
+
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { Manrope, Space_Grotesk } from "next/font/google";
 import {
     Area,
     AreaChart,
     CartesianGrid,
-    ReferenceArea,
     ResponsiveContainer,
     Tooltip,
     XAxis,
@@ -19,7 +20,10 @@ import styles from "./dashboard.module.css";
 const ui = Manrope({ subsets: ["latin"], variable: "--font-ui", display: "swap" });
 const num = Space_Grotesk({ subsets: ["latin"], variable: "--font-num", display: "swap" });
 
-/* ---------- types & data ---------- */
+const API_URL =
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+
+/* ---------- types ---------- */
 type Page = "Overview" | "Vital Signs" | "Health Trends" | "Assessments" | "Alerts";
 type RangeKey = "24 Hours" | "7 Days" | "30 Days";
 type MetricId = "hr" | "spo2" | "bp" | "temp";
@@ -30,90 +34,144 @@ interface Metric {
     unit: string;
     description: string;
     icon: string;
-    value: string;
-    current: number;
-    baseline: [number, number];
-    base: number;
-    amp: number;
-    decimals: number;
 }
 
-interface AlertItem {
+interface Measurement {
+    id: string;
+    measurement_type: string;
+    value_numeric: number | null;
+    unit: string;
+    measured_at: string;
+    quality_status: string;
+}
+
+interface MeasurementResponse {
+    items: Measurement[];
+    total: number;
+    limit: number;
+    offset: number;
+    has_more: boolean;
+}
+
+interface CheckIn {
+    id: string;
+    check_in_type: "WELLNESS" | "SYMPTOM";
+    crew_member_id: string;
+    recorded_at: string;
+    timestamp: string;
+    details: Record<string, unknown>;
+    provenance: Record<string, unknown>;
+}
+
+interface CheckInResponse {
+    items: CheckIn[];
+    total: number;
+    limit: number;
+    offset: number;
+    has_more: boolean;
+}
+
+interface LiveAlert {
+    id: string;
+    alert_identifier: string;
+    crew_member_id: string;
+    summary: string;
+    priority: "INFO" | "CAUTION" | "CRITICAL" | "EMERGENCY";
+    status: "open" | "acknowledged" | "assigned" | "resolved" | "dismissed";
+    event_time: string;
+    is_delayed: boolean;
+}
+
+interface AlertResponse {
+    items: LiveAlert[];
+    total: number;
+    limit: number;
+    offset: number;
+}
+
+interface LiveTask {
     id: string;
     title: string;
-    crew: string;
-    time: string;
-    level: "critical" | "warning" | "info";
-    status: "open" | "acknowledged";
-    delayed: boolean;
+    category: "MEASUREMENT_REMINDER" | "WELLNESS_CHECK_IN" | "FOLLOW_UP_ACTION" | "GENERAL";
+    status: "PENDING" | "COMPLETED" | "CANCELLED" | "MISSED";
+    due_start: string;
+    due_end: string;
+    completed_at: string | null;
 }
 
+interface TaskResponse {
+    items: LiveTask[];
+    total: number;
+    limit: number;
+    offset: number;
+}
+
+/* ---------- navigation and metrics ---------- */
 const PAGES: { name: Page; icon: string; title: string; blurb: string }[] = [
     { name: "Overview", icon: "home", title: "Mission overview", blurb: "Your health at a glance" },
-    { name: "Vital Signs", icon: "pulse", title: "Vital signs", blurb: "Current readings against your own baseline" },
+    { name: "Vital Signs", icon: "pulse", title: "Vital signs", blurb: "Your latest recorded health measurements" },
     { name: "Health Trends", icon: "trend", title: "Health trends", blurb: "How your readings change over time" },
     { name: "Assessments", icon: "check", title: "Health assessments", blurb: "Review assessment records and their status" },
     { name: "Alerts", icon: "bell", title: "Health alerts", blurb: "Notifications from health monitoring" },
 ];
 
 const METRICS: Metric[] = [
-    { id: "hr", title: "Heart rate", unit: "bpm", description: "Beats per minute at rest and during activity.", icon: "heart", value: "72", current: 72, baseline: [58, 78], base: 72, amp: 5, decimals: 0 },
-    { id: "spo2", title: "Oxygen saturation", unit: "%", description: "Share of oxygen carried in the blood.", icon: "drop", value: "96", current: 96, baseline: [97, 99], base: 97, amp: 1.2, decimals: 0 },
-    { id: "bp", title: "Blood pressure", unit: "mmHg", description: "Systolic and diastolic pressure. Charts show systolic.", icon: "pulse", value: "118/76", current: 118, baseline: [100, 130], base: 118, amp: 5, decimals: 0 },
-    { id: "temp", title: "Body temperature", unit: "°C", description: "Core temperature changes through the day.", icon: "thermo", value: "36.7", current: 36.7, baseline: [36.4, 37.1], base: 36.7, amp: 0.2, decimals: 1 },
-];
-
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const RANGES: Record<RangeKey, { n: number; label: (i: number) => string }> = {
-    "24 Hours": { n: 12, label: (i) => `${String(i * 2).padStart(2, "0")}:00` },
-    "7 Days": { n: 7, label: (i) => DAYS[i] },
-    "30 Days": { n: 10, label: (i) => `Day ${i * 3 + 1}` },
-};
-const RANGE_KEYS = Object.keys(RANGES) as RangeKey[];
-
-const INITIAL_ALERTS: AlertItem[] = [
-    { id: "a1", title: "Blood oxygen below your baseline", crew: "Cdr. Reyes", time: "09:42 UTC", level: "warning", status: "open", delayed: false },
-    { id: "a2", title: "Heart rate stayed elevated for 20 minutes", crew: "Cdr. Reyes", time: "08:15 UTC", level: "critical", status: "open", delayed: false },
-    { id: "a3", title: "Temperature reading synced after signal loss", crew: "Cdr. Reyes", time: "06:03 UTC", level: "info", status: "acknowledged", delayed: true },
-];
-
-const INITIAL_TASKS = [
-    { id: "t1", title: "Morning wellness check-in", time: "10:00", done: true },
-    { id: "t2", title: "Blood pressure reading", time: "14:00", done: false },
-    { id: "t3", title: "Symptom report", time: "20:00", done: false },
-];
-
-const ASSESSMENTS = [
     {
-        id: "s1", title: "Cardiovascular review", status: "Partially assessed", tone: "warning", time: "Today, 06:00 UTC",
-        summary: "Heart rate and blood pressure were assessed. Blood oxygen had too few recent readings.",
-        details: ["Heart rate: compared with your personal baseline", "Blood pressure: compared with your personal baseline", "Blood oxygen: not enough recent readings to assess"],
+        id: "hr",
+        title: "Heart rate",
+        unit: "bpm",
+        description: "Beats per minute at rest and during activity.",
+        icon: "heart",
     },
     {
-        id: "s2", title: "Respiratory review", status: "Insufficient evidence", tone: "muted", time: "Yesterday, 18:00 UTC",
-        summary: "There were not enough valid readings to reach a result. This is not the same as healthy.",
-        details: ["Fewer than 10 readings available for a baseline", "Latest reading is older than the freshness limit"],
+        id: "spo2",
+        title: "Oxygen saturation",
+        unit: "%",
+        description: "Share of oxygen carried in the blood.",
+        icon: "drop",
+    },
+    {
+        id: "bp",
+        title: "Blood pressure",
+        unit: "mmHg",
+        description: "Systolic and diastolic pressure.",
+        icon: "pulse",
+    },
+    {
+        id: "temp",
+        title: "Body temperature",
+        unit: "°C",
+        description: "Core temperature changes through the day.",
+        icon: "thermo",
     },
 ];
+
+const RANGE_KEYS: RangeKey[] = ["24 Hours", "7 Days", "30 Days"];
 
 /* ---------- helpers ---------- */
 const cx = (...a: (string | false | undefined)[]) => a.filter(Boolean).join(" ");
 
-function makeSeries(m: Metric, range: RangeKey) {
-    const r = RANGES[range];
-    return Array.from({ length: r.n }, (_, i) => {
-        const v = m.base + m.amp * Math.sin(i * 1.3 + m.base) + m.amp * 0.4 * Math.cos(i * 0.7);
-        return { label: r.label(i), value: Number(v.toFixed(m.decimals)) };
+function getMeasurementType(metricId: MetricId): string {
+    const types: Record<MetricId, string> = {
+        hr: "heart_rate",
+        spo2: "spo2",
+        bp: "blood_pressure_systolic",
+        temp: "body_temperature",
+    };
+
+    return types[metricId];
+}
+
+function formatMeasurementDate(date: string): string {
+    return new Date(date).toLocaleString([], {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
     });
 }
 
-function statusOf(m: Metric): { label: string; tone: "normal" | "warning" } {
-    if (m.current < m.baseline[0]) return { label: "Below baseline", tone: "warning" };
-    if (m.current > m.baseline[1]) return { label: "Above baseline", tone: "warning" };
-    return { label: "Within baseline", tone: "normal" };
-}
-
-/* ---------- small components ---------- */
+/* ---------- icons ---------- */
 const ICONS: Record<string, ReactNode> = {
     home: <><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><path d="M9 22V12h6v10" /></>,
     pulse: <path d="M22 12h-4l-3 9L9 3l-3 9H2" />,
@@ -124,10 +182,9 @@ const ICONS: Record<string, ReactNode> = {
     drop: <path d="M12 2.7l5.7 5.7a8 8 0 1 1-11.4 0z" />,
     thermo: <path d="M14 14.8V4a2 2 0 0 0-4 0v10.8a4 4 0 1 0 4 0z" />,
     plus: <path d="M12 5v14M5 12h14" />,
-    sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" /></>,
+    sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4-1.4" /></>,
     moon: <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />,
     close: <path d="M18 6L6 18M6 6l12 12" />,
-    chevron: <path d="M6 9l6 6 6-6" />,
 };
 
 function Icon({ name }: { name: string }) {
@@ -138,51 +195,54 @@ function Icon({ name }: { name: string }) {
     );
 }
 
-function Spark({ data }: { data: number[] }) {
-    const w = 96, h = 36;
-    const lo = Math.min(...data), span = Math.max(...data) - lo || 1;
-    const pts = data.map((v, i) => `${((i * w) / (data.length - 1)).toFixed(1)},${(h - 3 - ((v - lo) / span) * (h - 6)).toFixed(1)}`);
-    return (
-        <svg viewBox={`0 0 ${w} ${h}`} className={styles.spark} aria-hidden="true">
-            <polyline points={pts.join(" ")} fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-    );
-}
-
+/* ---------- reusable components ---------- */
 function Gauge({ value, average, max }: { value: number; average: number; max: number }) {
     const ring = (r: number, n: number, filled: number, on: string) =>
         Array.from({ length: n }, (_, i) => {
             const a = (i / n) * Math.PI * 2 - Math.PI / 2;
             const p = (d: number) => (100 + d * Math.cos(a)).toFixed(1);
             const q = (d: number) => (100 + d * Math.sin(a)).toFixed(1);
+
             return (
-                <line key={`${r}-${i}`} x1={p(r - 4)} y1={q(r - 4)} x2={p(r + 4)} y2={q(r + 4)}
-                    strokeWidth="4" strokeLinecap="round" className={i < filled ? on : styles.segOff} />
+                <line
+                    key={`${r}-${i}`}
+                    x1={p(r - 4)}
+                    y1={q(r - 4)}
+                    x2={p(r + 4)}
+                    y2={q(r + 4)}
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    className={i < filled ? on : styles.segOff}
+                />
             );
         });
+
     return (
-        <svg viewBox="0 0 200 200" className={styles.gaugeSvg} role="img" aria-label={`Heart rate ${value} beats per minute`}>
+        <svg
+            viewBox="0 0 200 200"
+            className={styles.gaugeSvg}
+            role="img"
+            aria-label={`Heart rate ${value} beats per minute`}
+        >
             {ring(88, 56, Math.round((56 * value) / max), styles.segOn)}
             {ring(70, 44, Math.round((44 * average) / max), styles.segAvg)}
         </svg>
     );
 }
 
-function RangeBar({ m }: { m: Metric }) {
-    const [lo, hi] = m.baseline;
-    const pad = (hi - lo) * 0.7;
-    const min = lo - pad, span = hi - lo + pad * 2;
-    const pos = Math.min(100, Math.max(0, ((m.current - min) / span) * 100));
-    return (
-        <div className={styles.rangeBar} aria-hidden="true">
-            <span className={styles.rangeBand} style={{ left: `${((lo - min) / span) * 100}%`, width: `${((hi - lo) / span) * 100}%` }} />
-            <span className={styles.rangeDot} style={{ left: `${pos}%` }} />
-        </div>
-    );
-}
-
-function ChartTip({ active, payload, label, unit }: { active?: boolean; payload?: { value?: number }[]; label?: string | number; unit: string }) {
+function ChartTip({
+    active,
+    payload,
+    label,
+    unit,
+}: {
+    active?: boolean;
+    payload?: { value?: number }[];
+    label?: string | number;
+    unit: string;
+}) {
     if (!active || !payload?.length) return null;
+
     return (
         <div className={styles.tip}>
             <span>{label}</span>
@@ -207,12 +267,21 @@ export default function Dashboard() {
     const [page, setPage] = useState<Page>("Overview");
     const [range, setRange] = useState<RangeKey>("7 Days");
     const [metricId, setMetricId] = useState<MetricId>("hr");
-    const [demo, setDemo] = useState(true);
     const [dark, setDark] = useState(true);
-    const [alerts, setAlerts] = useState(INITIAL_ALERTS);
-    const [alertFilter, setAlertFilter] = useState<"All" | "Open" | "Acknowledged">("All");
-    const [tasks, setTasks] = useState(INITIAL_TASKS);
-    const [openAssessment, setOpenAssessment] = useState<string | null>(null);
+
+    const [alertFilter, setAlertFilter] =
+        useState<"All" | "Open" | "Acknowledged">("All");
+
+    const [liveAlerts, setLiveAlerts] = useState<LiveAlert[]>([]);
+    const [alertsLoading, setAlertsLoading] = useState(false);
+    const [alertError, setAlertError] = useState("");
+    const [acknowledgingAlert, setAcknowledgingAlert] = useState<string | null>(null);
+
+    const [liveTasks, setLiveTasks] = useState<LiveTask[]>([]);
+    const [tasksLoading, setTasksLoading] = useState(false);
+    const [tasksError, setTasksError] = useState("");
+    const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
+
     const [modal, setModal] = useState(false);
     const [mood, setMood] = useState(4);
     const [fatigue, setFatigue] = useState(2);
@@ -222,42 +291,485 @@ export default function Dashboard() {
     const [savingCheckIn, setSavingCheckIn] = useState(false);
     const [toast, setToast] = useState("");
     const [now, setNow] = useState("");
+
+    const router = useRouter();
+    const [username, setUsername] = useState("Crew member");
+
+    const [measurements, setMeasurements] = useState<Measurement[]>([]);
+    const [measurementsLoading, setMeasurementsLoading] = useState(true);
+    const [measurementError, setMeasurementError] = useState("");
+
+    const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
+    const [checkInsLoading, setCheckInsLoading] = useState(true);
+    const [checkInsError, setCheckInsError] = useState("");
+
     const firstBtn = useRef<HTMLButtonElement>(null);
 
     const metric = METRICS.find((m) => m.id === metricId) ?? METRICS[0];
     const info = PAGES.find((p) => p.name === page) ?? PAGES[0];
-    const series = useMemo(() => makeSeries(metric, range), [metric, range]);
-    const values = series.map((s) => s.value);
-    const openCount = demo ? alerts.filter((a) => a.status === "open").length : 0;
-    const doneCount = tasks.filter((t) => t.done).length;
-    const shownAlerts = alerts.filter((a) => alertFilter === "All" || (alertFilter === "Open" ? a.status === "open" : a.status === "acknowledged"));
 
     useEffect(() => {
-        const tick = () => setNow(new Date().toISOString().slice(11, 19) + " UTC");
+        try {
+            const raw = sessionStorage.getItem("meliora_identity");
+
+            if (raw) {
+                const saved = JSON.parse(raw);
+
+                if (typeof saved?.username === "string") {
+                    setUsername(saved.username);
+                }
+            }
+        } catch {
+            /* keep the default name */
+        }
+    }, []);
+
+    function logout() {
+        sessionStorage.removeItem("meliora_access_token");
+        sessionStorage.removeItem("meliora_identity");
+        router.replace("/login");
+    }
+
+    const openCount = liveAlerts.filter(
+        (a) => a.status === "open" || a.status === "assigned"
+    ).length;
+
+    const taskTotal = liveTasks.length;
+
+    const doneCount = liveTasks.filter(
+        (task) => task.status === "COMPLETED"
+    ).length;
+
+    const shownLiveAlerts = liveAlerts.filter((a) => {
+        if (alertFilter === "All") return true;
+        if (alertFilter === "Open") {
+            return a.status === "open" || a.status === "assigned";
+        }
+        return a.status === "acknowledged";
+    });
+
+    /* ---------- load check-ins ---------- */
+    async function loadCheckIns() {
+        const token = sessionStorage.getItem("meliora_access_token");
+
+        if (!token) {
+            setCheckInsError("Please log in to view your check-in history.");
+            setCheckInsLoading(false);
+            return;
+        }
+
+        setCheckInsLoading(true);
+
+        try {
+            const response = await fetch(
+                `${API_URL}/api/v1/check-ins?check_in_type=ALL&limit=50`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Check-in history request failed (${response.status})`);
+            }
+
+            const data: CheckInResponse = await response.json();
+
+            setCheckIns(data.items ?? []);
+            setCheckInsError("");
+        } catch (error) {
+            setCheckInsError(
+                error instanceof Error
+                    ? error.message
+                    : "Unable to load check-in history."
+            );
+        } finally {
+            setCheckInsLoading(false);
+        }
+    }
+
+    /* ---------- load alerts ---------- */
+    async function loadAlerts() {
+        const token = sessionStorage.getItem("meliora_access_token");
+
+        if (!token) {
+            setAlertError("Please log in to view alerts.");
+            setAlertsLoading(false);
+            return;
+        }
+
+        setAlertsLoading(true);
+        setAlertError("");
+
+        try {
+            const response = await fetch(`${API_URL}/api/v1/alerts?limit=50`, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Alerts request failed (${response.status})`);
+            }
+
+            const data: AlertResponse = await response.json();
+
+            setLiveAlerts(data.items ?? []);
+        } catch (error) {
+            setAlertError(
+                error instanceof Error
+                    ? error.message
+                    : "Unable to load alerts."
+            );
+        } finally {
+            setAlertsLoading(false);
+        }
+    }
+
+    /* ---------- load today's tasks ---------- */
+    async function loadTasks() {
+        const token = sessionStorage.getItem("meliora_access_token");
+
+        if (!token) {
+            setTasksError("Please log in to view your tasks.");
+            setTasksLoading(false);
+            return;
+        }
+
+        setTasksLoading(true);
+        setTasksError("");
+
+        try {
+            const today = new Date();
+
+            const startOfDay = new Date(today);
+            startOfDay.setHours(0, 0, 0, 0);
+
+            const endOfDay = new Date(today);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            const params = new URLSearchParams({
+                due_from: startOfDay.toISOString(),
+                due_to: endOfDay.toISOString(),
+                limit: "100",
+            });
+
+            const response = await fetch(
+                `${API_URL}/api/v1/tasks?${params.toString()}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Tasks request failed (${response.status})`);
+            }
+
+            const data: TaskResponse = await response.json();
+
+            setLiveTasks(data.items ?? []);
+        } catch (error) {
+            setTasksError(
+                error instanceof Error
+                    ? error.message
+                    : "Unable to load today's tasks."
+            );
+        } finally {
+            setTasksLoading(false);
+        }
+    }
+
+    /* ---------- complete a task ---------- */
+    async function completeTask(taskId: string) {
+        if (completingTaskId !== null) return;
+
+        const token = sessionStorage.getItem("meliora_access_token");
+
+        if (!token) {
+            setTasksError("Please log in again to complete this task.");
+            return;
+        }
+
+        setCompletingTaskId(taskId);
+        setTasksError("");
+
+        try {
+            const response = await fetch(
+                `${API_URL}/api/v1/tasks/${taskId}/complete`,
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        completion_source: "CREW_PORTAL",
+                    }),
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+
+                const message =
+                    typeof errorData?.detail === "string"
+                        ? errorData.detail
+                        : `Task completion failed (${response.status}).`;
+
+                throw new Error(message);
+            }
+
+            const completedTask: LiveTask = await response.json();
+
+            setLiveTasks((current) =>
+                current.map((task) =>
+                    task.id === taskId ? completedTask : task
+                )
+            );
+
+            setToast("Task completed successfully.");
+        } catch (error) {
+            setTasksError(
+                error instanceof Error
+                    ? error.message
+                    : "Unable to complete this task."
+            );
+        } finally {
+            setCompletingTaskId(null);
+        }
+    }
+
+    /* ---------- initial API requests ---------- */
+    useEffect(() => {
+        loadTasks();
+        loadAlerts();
+        loadCheckIns();
+    }, []);
+
+    /* ---------- load measurements ---------- */
+    useEffect(() => {
+        const controller = new AbortController();
+
+        async function loadMeasurements() {
+            const token = sessionStorage.getItem("meliora_access_token");
+
+            if (!token) {
+                setMeasurementError("Please log in to view your readings.");
+                setMeasurementsLoading(false);
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    `${API_URL}/api/v1/measurements?limit=100`,
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        signal: controller.signal,
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`Measurements request failed (${response.status})`);
+                }
+
+                const data: MeasurementResponse = await response.json();
+
+                setMeasurements(data.items ?? []);
+                setMeasurementError("");
+            } catch (error) {
+                if (error instanceof Error && error.name === "AbortError") {
+                    return;
+                }
+
+                setMeasurementError(
+                    error instanceof Error
+                        ? error.message
+                        : "Unable to load measurements."
+                );
+            } finally {
+                if (!controller.signal.aborted) {
+                    setMeasurementsLoading(false);
+                }
+            }
+        }
+
+        loadMeasurements();
+
+        return () => controller.abort();
+    }, []);
+
+    /* ---------- latest measurement for each type ---------- */
+    const latestByType = useMemo(() => {
+        const sorted = [...measurements].sort(
+            (a, b) =>
+                new Date(b.measured_at).getTime() -
+                new Date(a.measured_at).getTime()
+        );
+
+        const latest: Record<string, Measurement> = {};
+
+        for (const item of sorted) {
+            if (
+                item.value_numeric !== null &&
+                !latest[item.measurement_type]
+            ) {
+                latest[item.measurement_type] = item;
+            }
+        }
+
+        return latest;
+    }, [measurements]);
+
+    const systolic = latestByType.blood_pressure_systolic;
+    const diastolic = latestByType.blood_pressure_diastolic;
+
+    const realMetricValues: Record<MetricId, string> = {
+        hr: latestByType.heart_rate?.value_numeric?.toFixed(0) ?? "--",
+        spo2: latestByType.spo2?.value_numeric?.toFixed(0) ?? "--",
+        bp:
+            systolic?.value_numeric != null &&
+                diastolic?.value_numeric != null
+                ? `${systolic.value_numeric.toFixed(0)}/${diastolic.value_numeric.toFixed(0)}`
+                : "--",
+        temp: latestByType.body_temperature?.value_numeric?.toFixed(1) ?? "--",
+    };
+
+    /* ---------- real trend data ---------- */
+    const realSeries = useMemo(() => {
+        const rangeMs: Record<RangeKey, number> = {
+            "24 Hours": 24 * 60 * 60 * 1000,
+            "7 Days": 7 * 24 * 60 * 60 * 1000,
+            "30 Days": 30 * 24 * 60 * 60 * 1000,
+        };
+
+        const matching = measurements
+            .filter((item) => {
+                return (
+                    item.measurement_type === getMeasurementType(metricId) &&
+                    item.value_numeric !== null &&
+                    Number.isFinite(new Date(item.measured_at).getTime())
+                );
+            })
+            .sort(
+                (a, b) =>
+                    new Date(a.measured_at).getTime() -
+                    new Date(b.measured_at).getTime()
+            );
+
+        if (matching.length === 0) return [];
+
+        const latestTime = new Date(
+            matching[matching.length - 1].measured_at
+        ).getTime();
+
+        const cutoff = latestTime - rangeMs[range];
+
+        return matching
+            .filter((item) => {
+                const timestamp = new Date(item.measured_at).getTime();
+                return timestamp >= cutoff && timestamp <= latestTime;
+            })
+            .map((item) => ({
+                label: formatMeasurementDate(item.measured_at),
+                value: item.value_numeric as number,
+            }));
+    }, [measurements, metricId, range]);
+    /* ---------- clock ---------- */
+    useEffect(() => {
+        const tick = () =>
+            setNow(new Date().toISOString().slice(11, 19) + " UTC");
+
         tick();
+
         const id = setInterval(tick, 1000);
+
         return () => clearInterval(id);
     }, []);
 
+    /* ---------- toast ---------- */
     useEffect(() => {
         if (!toast) return;
+
         const id = setTimeout(() => setToast(""), 3200);
+
         return () => clearTimeout(id);
     }, [toast]);
 
+    /* ---------- modal keyboard handling ---------- */
     useEffect(() => {
         if (!modal) return;
+
         firstBtn.current?.focus();
-        const onKey = (e: KeyboardEvent) => e.key === "Escape" && setModal(false);
+
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") setModal(false);
+        };
+
         window.addEventListener("keydown", onKey);
+
         return () => window.removeEventListener("keydown", onKey);
     }, [modal]);
 
-    function acknowledge(id: string) {
-        setAlerts((list) => list.map((a) => (a.id === id ? { ...a, status: "acknowledged" } : a)));
-        setToast("Alert acknowledged (demo)");
+    /* ---------- acknowledge live alert ---------- */
+    async function acknowledgeLiveAlert(id: string) {
+        if (acknowledgingAlert) return;
+
+        const token = sessionStorage.getItem("meliora_access_token");
+
+        if (!token) {
+            setToast("Session expired. Please log in again.");
+            return;
+        }
+
+        setAcknowledgingAlert(id);
+
+        try {
+            const response = await fetch(
+                `${API_URL}/api/v1/alerts/${id}/acknowledge`,
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({}),
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+
+                const message =
+                    typeof errorData?.detail === "string"
+                        ? errorData.detail
+                        : `Could not acknowledge alert (${response.status}).`;
+
+                throw new Error(message);
+            }
+
+            await loadAlerts();
+
+            setToast("Alert acknowledged successfully.");
+        } catch (error) {
+            setToast(
+                error instanceof Error
+                    ? error.message
+                    : "Unable to acknowledge alert."
+            );
+        } finally {
+            setAcknowledgingAlert(null);
+        }
     }
 
+    /* ---------- save wellness check-in ---------- */
     async function saveCheckIn() {
         if (savingCheckIn) return;
 
@@ -270,7 +782,11 @@ export default function Dashboard() {
 
         const sleepHours = Number(sleepDuration);
 
-        if (!Number.isFinite(sleepHours) || sleepHours < 0 || sleepHours > 24) {
+        if (
+            !Number.isFinite(sleepHours) ||
+            sleepHours < 0 ||
+            sleepHours > 24
+        ) {
             setToast("Sleep duration must be between 0 and 24 hours.");
             return;
         }
@@ -278,9 +794,6 @@ export default function Dashboard() {
         setSavingCheckIn(true);
 
         try {
-            const API_URL =
-                process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-
             const response = await fetch(`${API_URL}/api/v1/check-ins`, {
                 method: "POST",
                 headers: {
@@ -301,6 +814,7 @@ export default function Dashboard() {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => null);
+
                 const message =
                     typeof errorData?.detail === "string"
                         ? errorData.detail
@@ -311,38 +825,58 @@ export default function Dashboard() {
             }
 
             setModal(false);
+
+            await loadCheckIns();
+
             setToast("Wellness check-in submitted successfully.");
         } catch {
-            setToast("Could not reach the backend. Check that the server is running.");
+            setToast(
+                "Could not reach the backend. Check that the server is running."
+            );
         } finally {
             setSavingCheckIn(false);
         }
     }
 
-    /* ----- reusable blocks ----- */
+    /* ---------- metric cards ---------- */
     const metricCards = (
         <div className={styles.metricGrid}>
             {METRICS.map((m) => {
-                const st = statusOf(m);
+                const realValue = realMetricValues[m.id];
+
                 return (
-                    <button key={m.id} type="button" onClick={() => setMetricId(m.id)} aria-pressed={metricId === m.id}
-                        className={cx(styles.metricCard, metricId === m.id && styles.metricActive)}>
+                    <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setMetricId(m.id)}
+                        aria-pressed={metricId === m.id}
+                        className={cx(
+                            styles.metricCard,
+                            metricId === m.id && styles.metricActive
+                        )}
+                    >
                         <span className={styles.metricTop}>
-                            <span className={styles.metricIcon}><Icon name={m.icon} /></span>
-                            <span className={styles.metricName}>{m.title}</span>
+                            <span className={styles.metricIcon}>
+                                <Icon name={m.icon} />
+                            </span>
+
+                            <span className={styles.metricName}>
+                                {m.title}
+                            </span>
                         </span>
+
                         <span className={styles.metricValue}>
-                            {demo ? m.value : "--"} <small>{m.unit}</small>
+                            {realValue} <small>{m.unit}</small>
                         </span>
+
                         <span className={styles.metricBottom}>
-                            {demo ? (
-                                <>
-                                    <span className={cx(styles.chip, styles[st.tone])}>{st.label}</span>
-                                    <Spark data={makeSeries(m, "24 Hours").map((s) => s.value)} />
-                                </>
-                            ) : (
-                                <span className={cx(styles.chip, styles.muted)}>Awaiting data</span>
-                            )}
+                            <span className={cx(styles.chip, styles.muted)}>
+                                {measurementsLoading
+                                    ? "Loading..."
+                                    : realValue !== "--"
+                                        ? "Latest reading"
+                                        : "No reading"}
+                            </span>
                         </span>
                     </button>
                 );
@@ -350,81 +884,228 @@ export default function Dashboard() {
         </div>
     );
 
+    /* ---------- time range controls ---------- */
     const rangePills = (
         <div className={styles.pills} role="group" aria-label="Time range">
             {RANGE_KEYS.map((r) => (
-                <button key={r} type="button" aria-pressed={range === r} onClick={() => setRange(r)}
-                    className={cx(styles.pill, range === r && styles.pillActive)}>{r}</button>
+                <button
+                    key={r}
+                    type="button"
+                    aria-pressed={range === r}
+                    onClick={() => setRange(r)}
+                    className={cx(
+                        styles.pill,
+                        range === r && styles.pillActive
+                    )}
+                >
+                    {r}
+                </button>
             ))}
         </div>
     );
 
-    const lo = Math.min(...values, metric.baseline[0]);
-    const hi = Math.max(...values, metric.baseline[1]);
-    const pad = (hi - lo) * 0.15 || 1;
-    const chart = demo ? (
+    /* ---------- chart ---------- */
+    const chart = measurementsLoading ? (
+        <Empty
+            title="Loading readings"
+            text="Retrieving measurements from the mission data service."
+            tag="LOADING"
+        />
+    ) : measurementError ? (
+        <Empty
+            title="Unable to load readings"
+            text={measurementError}
+            tag="API ERROR"
+        />
+    ) : realSeries.length === 0 ? (
+        <Empty
+            title="No readings in this range"
+            text="No measurements were returned for this metric and time range."
+            tag="NO READINGS"
+        />
+    ) : (
         <div className={styles.chartBox}>
             <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={series} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+                <AreaChart
+                    data={realSeries}
+                    margin={{ top: 8, right: 8, left: -8, bottom: 0 }}
+                >
                     <defs>
-                        <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#8b7be8" stopOpacity={0.35} />
-                            <stop offset="100%" stopColor="#8b7be8" stopOpacity={0} />
+                        <linearGradient
+                            id="realTrendFill"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                        >
+                            <stop
+                                offset="0%"
+                                stopColor="#8b7be8"
+                                stopOpacity={0.35}
+                            />
+                            <stop
+                                offset="100%"
+                                stopColor="#8b7be8"
+                                stopOpacity={0}
+                            />
                         </linearGradient>
                     </defs>
-                    <CartesianGrid vertical={false} stroke="rgba(138,138,153,0.22)" />
-                    <ReferenceArea y1={metric.baseline[0]} y2={metric.baseline[1]} fill="#3fae7a" fillOpacity={0.09} />
-                    <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: "#8a8a99", fontSize: 12 }} />
-                    <YAxis domain={[Number((lo - pad).toFixed(1)), Number((hi + pad).toFixed(1))]} tickLine={false} axisLine={false} width={44} tick={{ fill: "#8a8a99", fontSize: 12 }} />
-                    <Tooltip content={<ChartTip unit={metric.unit} />} cursor={{ stroke: "#8b7be8", strokeDasharray: "4 4" }} />
-                    <Area type="monotone" dataKey="value" stroke="#8b7be8" strokeWidth={3} fill="url(#trendFill)"
-                        dot={{ r: 3, fill: "#8b7be8", strokeWidth: 0 }} activeDot={{ r: 6 }} />
+
+                    <CartesianGrid
+                        vertical={false}
+                        stroke="rgba(138,138,153,0.22)"
+                    />
+
+                    <XAxis
+                        dataKey="label"
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fill: "#8a8a99", fontSize: 12 }}
+                    />
+
+                    <YAxis
+                        domain={["auto", "auto"]}
+                        tickLine={false}
+                        axisLine={false}
+                        width={44}
+                        tick={{ fill: "#8a8a99", fontSize: 12 }}
+                    />
+
+                    <Tooltip
+                        content={<ChartTip unit={metric.unit} />}
+                        cursor={{
+                            stroke: "#8b7be8",
+                            strokeDasharray: "4 4",
+                        }}
+                    />
+
+                    <Area
+                        type="monotone"
+                        dataKey="value"
+                        stroke="#8b7be8"
+                        strokeWidth={3}
+                        fill="url(#realTrendFill)"
+                        dot={{
+                            r: 3,
+                            fill: "#8b7be8",
+                            strokeWidth: 0,
+                        }}
+                        activeDot={{ r: 6 }}
+                    />
                 </AreaChart>
             </ResponsiveContainer>
         </div>
-    ) : (
-        <Empty title="No readings yet" text="The chart appears here after the first synchronization with mission data." tag="AWAITING DATA" />
     );
 
-    const alertRow = (a: AlertItem, withAction: boolean) => (
-        <li key={a.id} className={styles.alertItem}>
-            <i className={cx(styles.alertBar, styles[a.level])} />
-            <div className={styles.alertBody}>
-                <p className={styles.alertTitle}>{a.title}</p>
-                <p className={styles.alertMeta}>
-                    {a.time} · {a.status === "open" ? "Open" : "Acknowledged"}
-                    {a.delayed && <span className={styles.badge}>Delayed sync</span>}
-                </p>
-            </div>
-            {withAction && a.status === "open" && (
-                <button type="button" className={styles.ackBtn} onClick={() => acknowledge(a.id)}>Acknowledge</button>
-            )}
-        </li>
-    );
+    /* ---------- live alert row ---------- */
+    const liveAlertRow = (a: LiveAlert, withAction: boolean) => {
+        const level =
+            a.priority === "CRITICAL" || a.priority === "EMERGENCY"
+                ? "critical"
+                : a.priority === "CAUTION"
+                    ? "warning"
+                    : "info";
 
+        const canAcknowledge =
+            a.status === "open" || a.status === "assigned";
+
+        return (
+            <li key={a.id} className={styles.alertItem}>
+                <i className={cx(styles.alertBar, styles[level])} />
+
+                <div className={styles.alertBody}>
+                    <p className={styles.alertTitle}>{a.summary}</p>
+
+                    <p className={styles.alertMeta}>
+                        {formatMeasurementDate(a.event_time)} ·{" "}
+                        {a.status.replaceAll("_", " ")}
+
+                        <span className={styles.badge}>
+                            {a.priority}
+                        </span>
+
+                        {a.is_delayed && (
+                            <span className={styles.badge}>
+                                Delayed sync
+                            </span>
+                        )}
+                    </p>
+
+                    <p className={styles.alertMeta}>
+                        {a.alert_identifier}
+                    </p>
+                </div>
+
+                {withAction && canAcknowledge && (
+                    <button
+                        type="button"
+                        className={styles.ackBtn}
+                        onClick={() => acknowledgeLiveAlert(a.id)}
+                        disabled={acknowledgingAlert !== null}
+                    >
+                        {acknowledgingAlert === a.id
+                            ? "Saving..."
+                            : "Acknowledge"}
+                    </button>
+                )}
+            </li>
+        );
+    };
+
+    /* ---------- render ---------- */
     return (
-        <main className={cx(styles.dashboard, ui.variable, num.variable)} data-theme={dark ? "dark" : "light"}>
+        <main
+            className={cx(styles.dashboard, ui.variable, num.variable)}
+            data-theme={dark ? "dark" : "light"}
+        >
             <div className={styles.shell}>
                 {/* SIDEBAR */}
                 <aside className={styles.sidebar}>
                     <div className={styles.brand}>
                         <h2>Meliora</h2>
                     </div>
+
                     <nav aria-label="Main">
                         {PAGES.map((p) => (
-                            <button key={p.name} type="button" onClick={() => setPage(p.name)}
-                                aria-current={page === p.name ? "page" : undefined}
-                                className={cx(styles.navItem, page === p.name && styles.active)}>
+                            <button
+                                key={p.name}
+                                type="button"
+                                onClick={() => setPage(p.name)}
+                                aria-current={
+                                    page === p.name ? "page" : undefined
+                                }
+                                className={cx(
+                                    styles.navItem,
+                                    page === p.name && styles.active
+                                )}
+                            >
                                 <Icon name={p.icon} />
+
                                 {p.name}
-                                {p.name === "Alerts" && openCount > 0 && <span className={styles.navBadge}>{openCount}</span>}
+
+                                {p.name === "Alerts" && openCount > 0 && (
+                                    <span className={styles.navBadge}>
+                                        {openCount}
+                                    </span>
+                                )}
                             </button>
                         ))}
                     </nav>
 
                     <div className={styles.sidebarBottom}>
-                        <b>Space mission 01</b>
-                        <span>Engineering prototype. Not a certified medical device.</span>
+                        <b>{username}</b>
+                        <span>Crew member</span>
+                        <span>
+                            Engineering prototype. Not a certified medical device.
+                        </span>
+
+                        <button
+                            type="button"
+                            className={styles.logout}
+                            onClick={logout}
+                        >
+                            Sign out
+                        </button>
                     </div>
                 </aside>
 
@@ -432,128 +1113,314 @@ export default function Dashboard() {
                 <section className={styles.main}>
                     <header className={styles.header}>
                         <div>
-                            <p className={styles.crumb}>Crew member portal</p>
+                            <p className={styles.crumb}>
+                                Crew member portal
+                            </p>
+
                             <h2>{info.title}</h2>
                         </div>
+
                         <div className={styles.tools}>
                             <span className={styles.clock}>{now}</span>
-                            <button type="button" role="switch" aria-checked={demo} onClick={() => setDemo(!demo)} className={cx(styles.switchBtn, demo && styles.switchOn)}>
-                                <span className={styles.switchKnob} />
-                                Demo data
-                            </button>
-                            <button type="button" className={styles.iconBtn} onClick={() => setDark(!dark)} aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}>
+
+                            <button
+                                type="button"
+                                className={styles.iconBtn}
+                                onClick={() => setDark(!dark)}
+                                aria-label={
+                                    dark
+                                        ? "Switch to light theme"
+                                        : "Switch to dark theme"
+                                }
+                            >
                                 <Icon name={dark ? "sun" : "moon"} />
                             </button>
-                            <button type="button" className={styles.iconBtn} onClick={() => setPage("Alerts")} aria-label={`Alerts, ${openCount} open`}>
+
+                            <button
+                                type="button"
+                                className={styles.iconBtn}
+                                onClick={() => setPage("Alerts")}
+                                aria-label={`Alerts, ${openCount} open`}
+                            >
                                 <Icon name="bell" />
-                                {openCount > 0 && <span className={styles.dotBadge}>{openCount}</span>}
+
+                                {openCount > 0 && (
+                                    <span className={styles.dotBadge}>
+                                        {openCount}
+                                    </span>
+                                )}
                             </button>
-                            <div className={styles.profile}>
-                                <div className={styles.avatar}>CR</div>
-                                <span>Crew member</span>
+
+                            <div className={styles.avatar}>
+                                {username.slice(0, 2).toUpperCase()}
                             </div>
+
+                            <span>{username}</span>
                         </div>
                     </header>
 
                     <div className={styles.content} key={page}>
                         <div className={styles.hero}>
                             <div>
-                                <h1>{page === "Overview" ? "Good day, Commander" : info.title}</h1>
+                                <h1>
+                                    {page === "Overview"
+                                        ? "Good day, Commander"
+                                        : info.title}
+                                </h1>
+
                                 <p>
                                     {page === "Overview"
-                                        ? demo ? `${openCount} alert${openCount === 1 ? "" : "s"} to review. Showing demo data.` : "Waiting for the first synchronization with mission data."
+                                        ? alertsLoading
+                                            ? "Synchronizing mission alerts..."
+                                            : alertError
+                                                ? alertError
+                                                : `${measurements.length} measurement records received from the mission data service.`
                                         : info.blurb}
                                 </p>
                             </div>
-                            <button type="button" className={styles.cta} onClick={() => setModal(true)}>
+
+                            <button
+                                type="button"
+                                className={styles.cta}
+                                onClick={() => setModal(true)}
+                            >
                                 <Icon name="plus" /> Log check-in
                             </button>
                         </div>
 
+                        {/* OVERVIEW */}
                         {page === "Overview" && (
                             <>
                                 {metricCards}
+
                                 <div className={styles.row2}>
                                     <section className={styles.card}>
                                         <div className={styles.cardHead}>
                                             <div>
                                                 <h3>{metric.title} trend</h3>
-                                                <p>{demo ? "Demo data" : "No data"} · {metric.unit} · green band is your baseline</p>
+                                                <p>
+                                                    Mission data · {metric.unit}
+                                                </p>
                                             </div>
+
                                             {rangePills}
                                         </div>
+
                                         {chart}
                                     </section>
+
                                     <section className={styles.card}>
                                         <h3>Heart rate zone</h3>
+
                                         <div className={styles.legend}>
-                                            <span className={styles.legendAvg}>Average</span>
-                                            <span className={styles.legendNow}>Current</span>
+                                            <span className={styles.legendAvg}>
+                                                Average
+                                            </span>
+                                            <span className={styles.legendNow}>
+                                                Current
+                                            </span>
                                         </div>
+
                                         <div className={styles.gauge}>
-                                            <Gauge value={demo ? 72 : 0} average={demo ? 68 : 0} max={180} />
+                                            <Gauge
+                                                value={
+                                                    latestByType.heart_rate
+                                                        ?.value_numeric ?? 0
+                                                }
+                                                average={
+                                                    latestByType.heart_rate
+                                                        ?.value_numeric ?? 0
+                                                }
+                                                max={180}
+                                            />
+
                                             <div className={styles.gaugeCenter}>
-                                                <b>{demo ? "72" : "--"}</b>
+                                                <b>{realMetricValues.hr}</b>
                                                 <small>beats / min</small>
                                             </div>
                                         </div>
                                     </section>
                                 </div>
+
                                 <div className={styles.row3}>
                                     <section className={styles.card}>
                                         <div className={styles.cardHead}>
                                             <h3>Latest alerts</h3>
-                                            <button type="button" className={styles.linkBtn} onClick={() => setPage("Alerts")}>View all</button>
+
+                                            <button
+                                                type="button"
+                                                className={styles.linkBtn}
+                                                onClick={() => setPage("Alerts")}
+                                            >
+                                                View all
+                                            </button>
                                         </div>
-                                        {demo ? <ul className={styles.alertList}>{alerts.slice(0, 2).map((a) => alertRow(a, false))}</ul>
-                                            : <p className={styles.quiet}>No alerts. Notifications appear here when alert data is received.</p>}
+
+                                        {alertsLoading ? (
+                                            <p className={styles.quiet}>
+                                                Loading alerts...
+                                            </p>
+                                        ) : alertError ? (
+                                            <p className={styles.quiet}>
+                                                {alertError}
+                                            </p>
+                                        ) : liveAlerts.length === 0 ? (
+                                            <p className={styles.quiet}>
+                                                No alert records are currently connected to this dashboard.
+                                            </p>
+                                        ) : (
+                                            <ul className={styles.alertList}>
+                                                {liveAlerts
+                                                    .slice(0, 2)
+                                                    .map((a) =>
+                                                        liveAlertRow(a, false)
+                                                    )}
+                                            </ul>
+                                        )}
                                     </section>
+
+                                    {/* TODAY'S TASKS */}
                                     <section className={styles.card}>
                                         <div className={styles.cardHead}>
                                             <h3>Today’s tasks</h3>
-                                            <span className={styles.chip}>{doneCount} of {tasks.length} done</span>
+
+                                            <span className={styles.chip}>
+                                                {doneCount} of {taskTotal} done
+                                            </span>
                                         </div>
-                                        <div className={styles.progress} aria-hidden="true"><span style={{ width: `${(doneCount / tasks.length) * 100}%` }} /></div>
-                                        <ul className={styles.tasks}>
-                                            {tasks.map((t) => (
-                                                <li key={t.id}>
-                                                    <label className={cx(styles.task, t.done && styles.taskDone)}>
-                                                        <input type="checkbox" checked={t.done}
-                                                            onChange={() => setTasks((l) => l.map((x) => (x.id === t.id ? { ...x, done: !x.done } : x)))} />
-                                                        <span className={styles.taskBox} />
-                                                        <span>{t.title}</span>
-                                                        <time>{t.time}</time>
-                                                    </label>
-                                                </li>
-                                            ))}
-                                        </ul>
+
+                                        <div
+                                            className={styles.progress}
+                                            aria-hidden="true"
+                                        >
+                                            <span
+                                                style={{
+                                                    width: `${taskTotal > 0
+                                                        ? (doneCount / taskTotal) * 100
+                                                        : 0
+                                                        }%`,
+                                                }}
+                                            />
+                                        </div>
+
+                                        {tasksLoading ? (
+                                            <p className={styles.quiet}>
+                                                Loading today's tasks...
+                                            </p>
+                                        ) : tasksError ? (
+                                            <p className={styles.quiet}>
+                                                {tasksError}
+                                            </p>
+                                        ) : liveTasks.length === 0 ? (
+                                            <p className={styles.quiet}>
+                                                No tasks scheduled for today.
+                                            </p>
+                                        ) : (
+                                            <ul className={styles.tasks}>
+                                                {liveTasks.map((task) => {
+                                                    const isCompleted =
+                                                        task.status === "COMPLETED";
+
+                                                    const canComplete =
+                                                        task.status === "PENDING";
+
+                                                    return (
+                                                        <li key={task.id}>
+                                                            <label
+                                                                className={cx(
+                                                                    styles.task,
+                                                                    isCompleted &&
+                                                                    styles.taskDone
+                                                                )}
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isCompleted}
+                                                                    disabled={
+                                                                        !canComplete ||
+                                                                        completingTaskId !== null
+                                                                    }
+                                                                    onChange={() =>
+                                                                        completeTask(task.id)
+                                                                    }
+                                                                />
+
+                                                                <span
+                                                                    className={styles.taskBox}
+                                                                />
+
+                                                                <span>
+                                                                    {task.title}
+                                                                </span>
+
+                                                                <time>
+                                                                    {isCompleted
+                                                                        ? "Completed"
+                                                                        : canComplete
+                                                                            ? formatMeasurementDate(task.due_start)
+                                                                            : task.status}
+                                                                </time>
+                                                            </label>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        )}
                                     </section>
                                 </div>
                             </>
                         )}
 
+                        {/* VITAL SIGNS */}
                         {page === "Vital Signs" && (
                             <div className={styles.vitalGrid}>
                                 {METRICS.map((m) => {
-                                    const st = statusOf(m);
+                                    const realValue = realMetricValues[m.id];
+
                                     return (
-                                        <article key={m.id} className={styles.card}>
+                                        <article
+                                            key={m.id}
+                                            className={styles.card}
+                                        >
                                             <div className={styles.metricTop}>
-                                                <span className={styles.metricIcon}><Icon name={m.icon} /></span>
-                                                <span className={styles.metricName}>{m.title}</span>
-                                                {demo && <span className={cx(styles.chip, styles[st.tone], styles.push)}>{st.label}</span>}
+                                                <span className={styles.metricIcon}>
+                                                    <Icon name={m.icon} />
+                                                </span>
+
+                                                <span className={styles.metricName}>
+                                                    {m.title}
+                                                </span>
                                             </div>
-                                            <p className={styles.metricValue}>{demo ? m.value : "--"} <small>{m.unit}</small></p>
-                                            <p className={styles.quiet}>{m.description}</p>
-                                            {demo ? (
-                                                <>
-                                                    <RangeBar m={m} />
-                                                    <p className={styles.rangeLabel}>Your baseline {m.baseline[0]}-{m.baseline[1]} {m.unit}</p>
-                                                </>
-                                            ) : (
-                                                <span className={cx(styles.chip, styles.muted)}>Awaiting data</span>
-                                            )}
-                                            <button type="button" className={styles.linkBtn} onClick={() => { setMetricId(m.id); setPage("Health Trends"); }}>
+
+                                            <p className={styles.metricValue}>
+                                                {realValue} <small>{m.unit}</small>
+                                            </p>
+
+                                            <p className={styles.quiet}>
+                                                {m.description}
+                                            </p>
+
+                                            <span
+                                                className={cx(
+                                                    styles.chip,
+                                                    styles.muted
+                                                )}
+                                            >
+                                                {measurementsLoading
+                                                    ? "Loading..."
+                                                    : realValue !== "--"
+                                                        ? "Latest reading"
+                                                        : "No reading"}
+                                            </span>
+
+                                            <button
+                                                type="button"
+                                                className={styles.linkBtn}
+                                                onClick={() => {
+                                                    setMetricId(m.id);
+                                                    setPage("Health Trends");
+                                                }}
+                                            >
                                                 See trend
                                             </button>
                                         </article>
@@ -562,98 +1429,249 @@ export default function Dashboard() {
                             </div>
                         )}
 
+                        {/* HEALTH TRENDS */}
                         {page === "Health Trends" && (
                             <>
-                                <div className={styles.pills} role="group" aria-label="Choose a measurement">
+                                <div
+                                    className={styles.pills}
+                                    role="group"
+                                    aria-label="Choose a measurement"
+                                >
                                     {METRICS.map((m) => (
-                                        <button key={m.id} type="button" aria-pressed={metricId === m.id} onClick={() => setMetricId(m.id)}
-                                            className={cx(styles.pill, metricId === m.id && styles.pillActive)}>{m.title}</button>
+                                        <button
+                                            key={m.id}
+                                            type="button"
+                                            aria-pressed={metricId === m.id}
+                                            onClick={() => setMetricId(m.id)}
+                                            className={cx(
+                                                styles.pill,
+                                                metricId === m.id &&
+                                                styles.pillActive
+                                            )}
+                                        >
+                                            {m.title}
+                                        </button>
                                     ))}
                                 </div>
+
                                 <section className={styles.card}>
                                     <div className={styles.cardHead}>
                                         <div>
                                             <h3>{metric.title}</h3>
-                                            <p>{demo ? "Demo data" : "No data"} · {metric.unit}</p>
+                                            <p>
+                                                Mission data · {metric.unit}
+                                            </p>
                                         </div>
+
                                         {rangePills}
                                     </div>
+
                                     {chart}
                                 </section>
+
                                 <div className={styles.statRow}>
                                     {[
-                                        ["Lowest", demo ? Math.min(...values) : "--"],
-                                        ["Average", demo ? Number((values.reduce((a, b) => a + b, 0) / values.length).toFixed(metric.decimals)) : "--"],
-                                        ["Highest", demo ? Math.max(...values) : "--"],
-                                    ].map(([label, v]) => (
+                                        [
+                                            "Lowest",
+                                            realSeries.length
+                                                ? Math.min(
+                                                    ...realSeries.map((s) => s.value)
+                                                )
+                                                : "--",
+                                        ],
+                                        [
+                                            "Average",
+                                            realSeries.length
+                                                ? Number(
+                                                    (
+                                                        realSeries.reduce(
+                                                            (a, b) => a + b.value,
+                                                            0
+                                                        ) / realSeries.length
+                                                    ).toFixed(2)
+                                                )
+                                                : "--",
+                                        ],
+                                        [
+                                            "Highest",
+                                            realSeries.length
+                                                ? Math.max(
+                                                    ...realSeries.map((s) => s.value)
+                                                )
+                                                : "--",
+                                        ],
+                                    ].map(([label, value]) => (
                                         <div key={label} className={styles.stat}>
                                             <span>{label}</span>
-                                            <b>{v} <small>{demo ? metric.unit : ""}</small></b>
+
+                                            <b>
+                                                {value}{" "}
+                                                <small>
+                                                    {realSeries.length
+                                                        ? metric.unit
+                                                        : ""}
+                                                </small>
+                                            </b>
                                         </div>
                                     ))}
                                 </div>
                             </>
                         )}
 
+                        {/* ASSESSMENTS */}
                         {page === "Assessments" && (
-                            demo ? (
-                                <div className={styles.acc}>
-                                    {ASSESSMENTS.map((a) => {
-                                        const open = openAssessment === a.id;
-                                        return (
-                                            <div key={a.id} className={cx(styles.accItem, open && styles.accOpen)}>
-                                                <button type="button" className={styles.accHead} aria-expanded={open}
-                                                    onClick={() => setOpenAssessment(open ? null : a.id)}>
+                            <div className={styles.acc}>
+                                {checkInsLoading ? (
+                                    <Empty
+                                        title="Loading check-in history"
+                                        text="Retrieving your submitted wellness and symptom records."
+                                        tag="LOADING"
+                                    />
+                                ) : checkInsError ? (
+                                    <Empty
+                                        title="Could not load check-ins"
+                                        text={checkInsError}
+                                        tag="ERROR"
+                                    />
+                                ) : checkIns.length === 0 ? (
+                                    <Empty
+                                        title="No check-ins yet"
+                                        text="Your submitted wellness and symptom check-ins will appear here."
+                                        tag="NO RECORDS"
+                                    />
+                                ) : (
+                                    <>
+                                        {checkIns.map((item) => (
+                                            <div
+                                                key={item.id}
+                                                className={styles.accItem}
+                                            >
+                                                <div className={styles.accHead}>
                                                     <span>
-                                                        <b>{a.title}</b>
-                                                        <small>{a.time}</small>
+                                                        <b>
+                                                            {item.check_in_type === "WELLNESS"
+                                                                ? "Wellness check-in"
+                                                                : "Symptom report"}
+                                                        </b>
+
+                                                        <small>
+                                                            {new Date(
+                                                                item.recorded_at
+                                                            ).toLocaleString()}
+                                                        </small>
                                                     </span>
-                                                    <span className={cx(styles.chip, styles[a.tone])}>{a.status}</span>
-                                                    <span className={styles.chev}><Icon name="chevron" /></span>
-                                                </button>
-                                                {open && (
-                                                    <div className={styles.accBody}>
-                                                        <p>{a.summary}</p>
-                                                        <ul>{a.details.map((d) => <li key={d}>{d}</li>)}</ul>
-                                                    </div>
-                                                )}
+
+                                                    <span className={styles.chip}>
+                                                        {item.check_in_type}
+                                                    </span>
+                                                </div>
+
+                                                <div className={styles.accBody}>
+                                                    <ul>
+                                                        {Object.entries(
+                                                            item.details
+                                                        ).map(([key, value]) => (
+                                                            <li key={key}>
+                                                                <strong>
+                                                                    {key.replaceAll("_", " ")}:
+                                                                </strong>{" "}
+
+                                                                {Array.isArray(value)
+                                                                    ? value.join(", ")
+                                                                    : value !== null &&
+                                                                        typeof value === "object"
+                                                                        ? JSON.stringify(value)
+                                                                        : String(value)}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
                                             </div>
-                                        );
-                                    })}
-                                    <p className={styles.quiet}>Demo layout only. These are not medical results.</p>
-                                </div>
-                            ) : (
-                                <Empty title="No assessments available" text="Assessment records appear here once they are synchronized with mission data." tag="AWAITING DATA" />
-                            )
+                                        ))}
+
+                                        <p className={styles.quiet}>
+                                            Showing {checkIns.length} of your latest check-in records.
+                                            These are self-reported records, not medical diagnoses.
+                                        </p>
+                                    </>
+                                )}
+                            </div>
                         )}
 
+                        {/* ALERTS */}
                         {page === "Alerts" && (
                             <>
-                                <div className={styles.pills} role="group" aria-label="Filter alerts">
-                                    {(["All", "Open", "Acknowledged"] as const).map((f) => (
-                                        <button key={f} type="button" aria-pressed={alertFilter === f} onClick={() => setAlertFilter(f)}
-                                            className={cx(styles.pill, alertFilter === f && styles.pillActive)}>{f}</button>
+                                <div
+                                    className={styles.pills}
+                                    role="group"
+                                    aria-label="Filter alerts"
+                                >
+                                    {(
+                                        ["All", "Open", "Acknowledged"] as const
+                                    ).map((f) => (
+                                        <button
+                                            key={f}
+                                            type="button"
+                                            aria-pressed={alertFilter === f}
+                                            onClick={() => setAlertFilter(f)}
+                                            className={cx(
+                                                styles.pill,
+                                                alertFilter === f &&
+                                                styles.pillActive
+                                            )}
+                                        >
+                                            {f}
+                                        </button>
                                     ))}
                                 </div>
-                                {demo ? (
-                                    shownAlerts.length ? (
-                                        <section className={styles.card}>
-                                            <ul className={styles.alertList}>{shownAlerts.map((a) => alertRow(a, true))}</ul>
-                                        </section>
-                                    ) : (
-                                        <Empty title="Nothing in this filter" text="Try another filter to see the rest of your alerts." tag="ALL CLEAR" />
-                                    )
+
+                                {alertsLoading ? (
+                                    <Empty
+                                        title="Loading alerts"
+                                        text="Retrieving notifications from the mission alert service."
+                                        tag="LOADING"
+                                    />
+                                ) : alertError ? (
+                                    <Empty
+                                        title="Unable to load alerts"
+                                        text={alertError}
+                                        tag="API ERROR"
+                                    />
+                                ) : shownLiveAlerts.length > 0 ? (
+                                    <section className={styles.card}>
+                                        <ul className={styles.alertList}>
+                                            {shownLiveAlerts.map((a) =>
+                                                liveAlertRow(a, true)
+                                            )}
+                                        </ul>
+                                    </section>
+                                ) : liveAlerts.length === 0 ? (
+                                    <Empty
+                                        title="No alerts yet"
+                                        text="Health monitoring notifications will appear here when alert data is received."
+                                        tag="NO ALERTS"
+                                    />
                                 ) : (
-                                    <Empty title="No new alerts" text="Health monitoring notifications appear here when alert data is received." tag="AWAITING DATA" />
+                                    <Empty
+                                        title="Nothing in this filter"
+                                        text="Try another filter to see the rest of your alerts."
+                                        tag="ALL CLEAR"
+                                    />
                                 )}
                             </>
                         )}
                     </div>
                 </section>
             </div>
+
             {/* CHECK-IN MODAL */}
             {modal && (
-                <div className={styles.overlay} onClick={() => !savingCheckIn && setModal(false)}>
+                <div
+                    className={styles.overlay}
+                    onClick={() =>
+                        !savingCheckIn && setModal(false)
+                    }
+                >
                     <div
                         className={styles.modal}
                         role="dialog"
@@ -663,10 +1681,13 @@ export default function Dashboard() {
                     >
                         <div className={styles.modalHead}>
                             <h3 id="ci-title">How are you today?</h3>
+
                             <button
                                 type="button"
                                 className={styles.iconBtn}
-                                onClick={() => !savingCheckIn && setModal(false)}
+                                onClick={() =>
+                                    !savingCheckIn && setModal(false)
+                                }
                                 aria-label="Close"
                             >
                                 <Icon name="close" />
@@ -677,6 +1698,7 @@ export default function Dashboard() {
                             <label htmlFor="sleep-duration">
                                 Sleep duration <small>(hours, 0–24)</small>
                             </label>
+
                             <input
                                 id="sleep-duration"
                                 type="number"
@@ -684,7 +1706,9 @@ export default function Dashboard() {
                                 max="24"
                                 step="0.5"
                                 value={sleepDuration}
-                                onChange={(e) => setSleepDuration(e.target.value)}
+                                onChange={(e) =>
+                                    setSleepDuration(e.target.value)
+                                }
                                 className={styles.sleepInput}
                             />
                         </div>
@@ -698,16 +1722,30 @@ export default function Dashboard() {
                             ] as const
                         ).map(([label, val, set], row) => (
                             <div key={label} className={styles.scaleRow}>
-                                <span>{label} <small>1 low, 5 high</small></span>
-                                <div className={styles.scale} role="group" aria-label={label}>
+                                <span>
+                                    {label} <small>1 low, 5 high</small>
+                                </span>
+
+                                <div
+                                    className={styles.scale}
+                                    role="group"
+                                    aria-label={label}
+                                >
                                     {[1, 2, 3, 4, 5].map((n) => (
                                         <button
                                             key={n}
                                             type="button"
-                                            ref={row === 0 && n === 1 ? firstBtn : undefined}
+                                            ref={
+                                                row === 0 && n === 1
+                                                    ? firstBtn
+                                                    : undefined
+                                            }
                                             aria-pressed={val === n}
                                             onClick={() => set(n)}
-                                            className={cx(styles.scaleBtn, val === n && styles.scaleOn)}
+                                            className={cx(
+                                                styles.scaleBtn,
+                                                val === n && styles.scaleOn
+                                            )}
                                         >
                                             {n}
                                         </button>
@@ -725,19 +1763,27 @@ export default function Dashboard() {
                             >
                                 Cancel
                             </button>
+
                             <button
                                 type="button"
                                 className={styles.cta}
                                 onClick={saveCheckIn}
                                 disabled={savingCheckIn}
                             >
-                                {savingCheckIn ? "Submitting..." : "Save check-in"}
+                                {savingCheckIn
+                                    ? "Submitting..."
+                                    : "Save check-in"}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
+            {toast && (
+                <div className={styles.toast} role="status">
+                    {toast}
+                </div>
+            )}
         </main>
     );
 }

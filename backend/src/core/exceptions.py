@@ -151,7 +151,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             )
         logger.info(f"Request validation failed: {len(sanitized_errors)} errors")
         return JSONResponse(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={
                 "error": {
                     "code": primary_code,

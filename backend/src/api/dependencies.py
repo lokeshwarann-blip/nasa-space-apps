@@ -3,6 +3,8 @@ from collections.abc import Callable
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from src.models.user import User
 
 from src.core.database import get_db
 from src.core.exceptions import AppException
@@ -18,8 +20,10 @@ security_scheme = HTTPBearer(auto_error=False)
 
 async def get_current_identity(
     credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),
+    session: AsyncSession = Depends(get_db),
 ) -> AuthenticatedIdentity:
-    """Extracts and cryptographically validates the Bearer token."""
+    """Validates JWT and verifies the account is active in the database."""
+
     if credentials is None or not credentials.credentials:
         raise AppException(
             message="Missing or malformed Authorization header. Bearer token required.",
@@ -28,9 +32,33 @@ async def get_current_identity(
         )
 
     token = credentials.credentials
+
     try:
         identity = default_identity_provider.validate_token(token)
-        return identity
+
+        query = select(User).where(User.username == identity.username)
+        result = await session.execute(query)
+        user = result.scalar_one_or_none()
+
+        if user is None or not user.is_active:
+            raise AppException(
+                message="Account is inactive or no longer exists.",
+                code="unauthorized",
+                status_code=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        return AuthenticatedIdentity(
+            user_id=str(user.id),
+            username=user.username,
+            role=user.role,
+            crew_member_id=(
+                str(user.crew_member_id) if user.crew_member_id else None
+            ),
+            assigned_crew_ids=[
+                str(cid) for cid in (user.assigned_crew_ids or [])
+            ],
+        )
+
     except TokenExpiredError as exc:
         raise AppException(
             message=str(exc),
@@ -43,8 +71,7 @@ async def get_current_identity(
             code="unauthorized",
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
-
-
+    
 def require_roles(*allowed_roles: str) -> Callable:
     """Role-Based Access Control (RBAC) dependency factory."""
 
