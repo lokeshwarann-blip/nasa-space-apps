@@ -106,7 +106,7 @@ export default function LoginPage() {
     return (
         <main className={styles.page}>
             <CelestialSphere
-                hue={220}
+                hue={175}
                 speed={0.4}
                 zoom={1.2}
                 particleSize={4}

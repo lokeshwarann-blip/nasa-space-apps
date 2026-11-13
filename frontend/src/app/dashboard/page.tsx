@@ -940,12 +940,12 @@ export default function Dashboard() {
                         >
                             <stop
                                 offset="0%"
-                                stopColor="#8b7be8"
+                                stopColor="#0d9488"
                                 stopOpacity={0.35}
                             />
                             <stop
                                 offset="100%"
-                                stopColor="#8b7be8"
+                                stopColor="#0d9488"
                                 stopOpacity={0}
                             />
                         </linearGradient>
@@ -974,7 +974,7 @@ export default function Dashboard() {
                     <Tooltip
                         content={<ChartTip unit={metric.unit} />}
                         cursor={{
-                            stroke: "#8b7be8",
+                            stroke: "#2dd4bf",
                             strokeDasharray: "4 4",
                         }}
                     />
@@ -982,15 +982,15 @@ export default function Dashboard() {
                     <Area
                         type="monotone"
                         dataKey="value"
-                        stroke="#8b7be8"
+                        stroke="#0d9488"
                         strokeWidth={3}
                         fill="url(#realTrendFill)"
                         dot={{
                             r: 3,
-                            fill: "#8b7be8",
+                            fill: "#2dd4bf",
                             strokeWidth: 0,
                         }}
-                        activeDot={{ r: 6 }}
+                        activeDot={{ r: 6, fill: "#5eead4" }}
                     />
                 </AreaChart>
             </ResponsiveContainer>

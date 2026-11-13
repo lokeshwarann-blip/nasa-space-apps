@@ -34,7 +34,7 @@
     z-index: 2;
     width: min(100%, 430px);
     padding: 38px;
-    border: 1px solid rgba(255, 255, 255, 0.17);
+    border: 1px solid rgba(45, 212, 191, 0.2);
     border-radius: 24px;
     background: rgba(13, 22, 42, 0.73);
     backdrop-filter: blur(22px);
@@ -99,12 +99,12 @@
 }
 
 .roleButton:hover {
-    border-color: #82baff;
+    border-color: #2dd4bf;
 }
 
 .selected {
-    border-color: #80baff;
-    background: rgba(74, 144, 226, .2);
+    border-color: #2dd4bf;
+    background: rgba(45, 212, 191, .16);
     color: #fff;
 }
 
@@ -124,15 +124,13 @@
 }
 
 .input:focus {
-    border-color: #80baff;
-    box-shadow: 0 0 0 3px rgba(128, 186, 255, .12);
+    border-color: #2dd4bf;
+    box-shadow: 0 0 0 3px rgba(45, 212, 191, .12);
 }
 
 .input::placeholder {
     color: #75839b;
 }
-
-
 
 .note {
     text-align: center;
@@ -140,6 +138,35 @@
     font-size: 10px;
     margin-top: 20px;
     line-height: 1.6;
+}
+
+.submit {
+    width: 100%;
+    padding: 14px 18px;
+    margin-top: 8px;
+    border: none;
+    border-radius: 10px;
+    background: #0d9488;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.submit:hover {
+    background: #0f766e;
+    transform: translateY(-1px);
+}
+
+.submit:active {
+    transform: translateY(0);
+}
+
+.submit:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
 }
 
 @media (max-width: 480px) {
@@ -150,31 +177,4 @@
     .logo h1 {
         font-size: 25px;
     }
-}
-
-.submit {
-    width: 100%;
-    padding: 14px 18px;
-    margin-top: 8px;
-
-    border: none;
-    border-radius: 10px;
-
-    background: #8b7be8;
-    color: #ffffff;
-
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-
-    transition: background 0.2s ease, transform 0.2s ease;
-}
-
-.submit:hover {
-    background: #6a58d4;
-    transform: translateY(-1px);
-}
-
-.submit:active {
-    transform: translateY(0);
 }
