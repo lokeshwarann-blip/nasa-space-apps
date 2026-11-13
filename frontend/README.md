@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+MELIORA brings astronaut health information into a centralized dashboard helping crew members and authorized medical personnel monitor health indicators and review available health trends.
 
-First, run the development server:
+The platform is designed around the needs of three user roles:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Crew Members:** Access their health information and monitor personal health indicators.
+- **Flight Surgeons:** Review health information for assigned crew members.
+- **Administrators:** Manage registered user accounts.
+
+##  Key Features
+
+- Health monitoring dashboard.
+- Visualization of health indicators and historical trends.
+- Role-based authentication and authorization.
+- Crew-specific access controls.
+- Flight surgeon dashboard for assigned crew members.
+- Administrative user management.
+- Backend API for health data and authentication.
+
+## Technology Stack
+
+| Component | Technologies |
+|---|---|
+| Frontend | Next.js, React, TypeScript |
+| Styling | CSS Modules |
+| Charts | Recharts |
+| Backend | Python, FastAPI |
+| Database | PostgreSQL |
+| ORM | SQLAlchemy |
+| Database Migrations | Alembic |
+| Authentication | JWT, Argon2id password hashing |
+
+##  Project Structure
+
+```text
+nasa-space-apps/
+│
+├── backend/
+│   ├── migrations/
+│   └── src/
+│       ├── api/
+│       ├── core/
+│       ├── models/
+│       └── modules/
+│
+└── frontend/
+    └── src/
+        ├── app/
+        │   ├── admin/
+        │   ├── dashboard/
+        │   ├── login/
+        │   └── flight-sergeon/
+        └── components/
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+##  Getting Started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Prerequisites
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Python
+- Node.js and npm
+- PostgreSQL
 
-## Learn More
+### 1. Clone the repository
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+git clone https://github.com/srijonighosh04/nasa-space-apps.git
+cd nasa-space-apps
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 2. Backend Setup
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+cd backend
+python -m venv venv
+```
 
-## Deploy on Vercel
+Activate the virtual environment.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Windows:**
+```powershell
+.\venv\Scripts\Activate.ps1
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Install the backend dependencies using the project's dependency file, configure the environment variables using the provided example configuration, and start the backend:
+
+```bash
+python -m uvicorn src.main:app --reload
+```
+
+Backend API documentation:
+
+`http://localhost:8000/docs`
+
+### 3. Frontend Setup
+
+Open a separate terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open:
+
+`http://localhost:3000`
+
+
