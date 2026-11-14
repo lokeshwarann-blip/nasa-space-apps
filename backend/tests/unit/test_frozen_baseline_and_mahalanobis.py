@@ -121,4 +121,4 @@ def test_conformal_forecast_finite_sample_correction():
     fc = conformal_forecast(s, alpha=0.10)
     assert fc is not None
     assert fc["lo"] < fc["next"] < fc["hi"]
-    assert fc["method"] == "adaptive_conformal"
+    assert fc["method"] in ("adaptive_split_conformal", "parametric_student_t")

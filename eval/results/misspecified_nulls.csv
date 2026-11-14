@@ -1,0 +1,6 @@
+null_scenario,alerts_observed,far_per_fortnight,ci_95,runs_evaluated
+Standard Gaussian Null,4,0.1,"[0.0272, 0.2560]",40
+Heavy-Tailed Student-t(3) Noise,6,0.15,"[0.0550, 0.3265]",40
+Circadian / Diurnal Seasonality,12,0.3,"[0.1550, 0.5240]",40
+Clustered Missingness (25% Dropouts),6,0.15,"[0.0550, 0.3265]",40
+Slow Benign Trend (+0.03 SD/day),8,0.2,"[0.0863, 0.3941]",40

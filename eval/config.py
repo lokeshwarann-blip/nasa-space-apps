@@ -49,8 +49,8 @@ BASELINES = {
 # Clinical noise floor (MIN_SD)
 MIN_SD = {
     "heart_rate": 3.0, "blood_pressure_systolic": 4.0, "blood_pressure_diastolic": 3.0,
-    "spo2": 1.5, "body_temperature": 0.2, "sleep_duration": 0.6, "stress": 0.8, "mood": 0.8,
-    "fatigue": 0.8, "hrv": 8.0,
+    "spo2": 1.5, "body_temperature": 0.2, "sleep_duration": 0.6, "stress": 1.0, "mood": 1.0,
+    "fatigue": 1.0, "hrv": 8.0,
 }
 
 # Metric directionality (+1 = higher is better, -1 = higher is worse, 0 = any deviation is worse)

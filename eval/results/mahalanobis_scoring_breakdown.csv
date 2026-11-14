@@ -1,0 +1,6 @@
+metric,value,detail
+Sidak Mission Daily Alpha,0.00366,Corrects family-wise error across 14-day mission horizon
+Evaluated Null Runs,200,Single final-day multivariate test per trajectory
+Expected False Alarms,0.731,0.73 expected false alerts across 200 runs
+P(Zero False Alarms),48.1%,High probability (48.0%) of observing zero alerts under null
+Hotelling T^2 / F Cutoff Conservatism,31.4 vs 15.6,"Finite-sample F-cutoff exceeds asymptotic Chi^2, preventing false alarms"

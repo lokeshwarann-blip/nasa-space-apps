@@ -1,0 +1,4 @@
+estimator,null_false_alarm_rate,coordinated_drift_detection_pct,matrix_condition_number,runs_evaluated
+Ledoit-Wolf to Identity,0.0,0.0,3.8,30
+Block-Diagonal (Cardio / Neuro),0.0,0.0,4.2,30
+Empirical Sample Covariance,0.0,0.0,18.5,30

@@ -1,5 +1,6 @@
-scenario,univariate_detection_rate_pct,mahalanobis_detection_rate_pct,runs_evaluated
-Null Telemetry,0.0,0.0,40
-Single-Metric Shift (HR +2.5 SD),100.0,0.0,40
-Coordinated Multi-Metric Drift (4x 0.8 SD),0.0,0.0,40
-Missingness Marginalization (2 Dropouts),2.5,0.0,40
+scenario,univariate_detection_rate_pct,mahalanobis_detection_rate_pct,mean_shrinkage_beta,mean_sample_ratio_n_p,runs_evaluated
+Null Telemetry,0.0,0.0,0.708,0.8,40
+Single-Metric Shift (HR +2.5 SD),100.0,0.0,0.739,0.8,40
+Coordinated Multi-Metric Drift (4x 0.8 SD Aligned),0.0,0.0,0.748,0.8,40
+"Shift Against Correlation (HR +1.5 SD, SBP -1.5 SD Opposed)",15.0,0.0,0.747,0.8,40
+Missingness Marginalization (2 Dropouts),2.5,0.0,0.755,0.8,40

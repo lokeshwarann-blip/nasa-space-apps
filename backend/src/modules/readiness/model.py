@@ -50,7 +50,7 @@ def check_sensor_faults(df_user: pd.DataFrame, window_readings: int = 12) -> lis
     faults = []
     for m in TEN_SIGNALS:
         m_df = df_user[df_user["measurement_type"] == m].sort_values("measured_at")
-        if len(m_df) < 6:
+        if len(m_df) < 2:
             continue
         vals = m_df["value_numeric"].values
         recent = vals[-window_readings:] if len(vals) >= window_readings else vals
@@ -151,7 +151,7 @@ def _detect_prewhitened_cusum(
             # Cold start after missing data gap
             innovations[t] = vals[t]
 
-    # CUSUM accumulation on adverse innovation deficits
+    # CUSUM accumulation on adverse innovation deficits with canonical Page reset
     cusum = 0.0
     accumulated_count = 0
     for e in innovations:
@@ -160,7 +160,9 @@ def _detect_prewhitened_cusum(
             cusum += deficit
             accumulated_count += 1
         else:
-            cusum = max(0.0, cusum + deficit * 0.5)
+            cusum = max(0.0, cusum + deficit)
+            if cusum == 0.0:
+                accumulated_count = 0
 
     if cusum >= threshold and accumulated_count >= min_periods:
         current_val = float(clean.iloc[-1])
@@ -293,22 +295,27 @@ def conformal_forecast(
     m = len(residuals)
     nxt = float(level.iloc[-1])
 
-    # Task 15: Small-sample fallback when m < 1/alpha
+    # Task 15 & Fix 9: Small-sample fallback when m < 1/alpha
+    # Note: When sample size m < 1/alpha, distribution-free conformal quantiles cannot guarantee
+    # non-trivial finite intervals. We fall back to a parametric Student-t prediction interval under
+    # Gaussian residual assumptions, and use non-parametric adaptive split conformal when m >= 1/alpha.
     if m < int(1.0 / alpha):
         std_err = float(np.std(residuals, ddof=1)) if m > 1 else max(0.5, float(np.std(clean)))
         df_t = max(1, m - 1)
         t_crit = float(stats.t.ppf(1.0 - alpha / 2.0, df=df_t))
         q_radius = float(t_crit * std_err * np.sqrt(1.0 + 1.0 / max(1, m)))
+        method_label = "parametric_student_t"
     else:
         # Finite-sample conformal quantile: ceil((m+1)(1-alpha)) / m
         p_level = min(1.0, np.ceil((m + 1) * (1.0 - alpha)) / m)
         q_radius = float(np.quantile(residuals, p_level))
+        method_label = "adaptive_split_conformal"
 
     return {
         "next": round(nxt, 2),
         "lo": round(nxt - q_radius, 2),
         "hi": round(nxt + q_radius, 2),
-        "method": "adaptive_conformal"
+        "method": method_label
     }
 
 

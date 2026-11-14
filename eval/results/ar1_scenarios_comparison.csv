@@ -1,0 +1,4 @@
+scenario,raw_cusum_detection_rate_pct,raw_cusum_median_delay_days,prewhitened_cusum_detection_rate_pct,prewhitened_cusum_median_delay_days,prewhitening_delay_delta_days,runs_evaluated
+Ramp (0 to 2.0 SD over 4d),100.0,0.0,100.0,0.0,0.0,30
+Plateau (Sustained 2.0 SD),100.0,0.0,100.0,0.0,0.0,30
+"Recovery (2.0 SD for 3d, then returns)",100.0,0.0,100.0,0.0,0.0,30

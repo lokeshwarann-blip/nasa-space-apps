@@ -1,0 +1,4 @@
+sufficiency_tier,calibration_window_days,far_per_fortnight,detection_rate_1_5_sd_pct,runs_evaluated
+low,5,0.56,66.0,50
+moderate,8,0.32,70.0,50
+high,14,0.04,88.0,50

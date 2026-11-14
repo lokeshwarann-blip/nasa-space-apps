@@ -1,0 +1,5 @@
+sufficiency_tier,min_days,fraction_scored_pct,reason
+high,10,100.0,Full covariance matrix (p >= 4) with robust shrinkage
+moderate,7,94.5,Evaluated with sub-covariance extraction when p >= 3
+low,4,42.0,Frequently gated by missing signal dropout (p < 3)
+insufficient,0,0.0,Gated by sample-size safeguard (n < p); deferred to univariate

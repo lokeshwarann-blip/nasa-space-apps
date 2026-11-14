@@ -1,0 +1,3 @@
+condition,baseline_version,alerts_count,readiness_score,status
+Before Recalibration (Pre-Flight Baseline),BSL-025B7266,2,89.2,CRITICAL
+After Recalibration (Post-Adaptation Baseline),BSL-04B945BB,0,100.0,NOMINAL

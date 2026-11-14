@@ -1,0 +1,5 @@
+test_type,detected_fault,scoring_gated,false_alert_emitted
+Sensor Flatline,mood_flatline,True,False
+Sensor Implausible Jump,,False,False
+True Physiological Drift (HR +2 SD),None (Real shift),False,True
+Post-Anomaly Recovery Time,N/A (Recovery metric),False,1.5 days to NOMINAL

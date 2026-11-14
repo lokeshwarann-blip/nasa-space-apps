@@ -1,11 +1,12 @@
-"""eval/ar1_evaluation.py - Task 2: AR(1) Autocorrelation False-Alert Investigation.
+"""eval/ar1_evaluation.py - Task 2 & Task 6: AR(1) Autocorrelation False-Alert & Dynamic Scenario Benchmark.
 
 Investigates:
 1. Impact of autocorrelation phi in {0.0, 0.2, 0.4, 0.6, 0.8} on false alerts.
-2. Calibration of thresholds on autocorrelated normal data (TUNE_SEEDS).
-3. Prewhitened residual CUSUM vs variance-inflated CUSUM vs EWMA (with variance correction).
-4. Generates delay-vs-FAR tradeoff curves and recommends an optimal detector.
-Evaluated strictly on held-out seeds.
+2. Gap-aware estimation of phi on baseline data only (|phi| <= 0.90).
+3. Prewhitened residual CUSUM vs variance-inflated raw CUSUM vs EWMA (with variance correction).
+4. Task 6 scenarios: Ramp, Plateau, and Recovery shifts, measuring detection delay before vs after prewhitening.
+   Theoretical note: Prewhitening shrinks a sustained step shift innovation by ~sqrt((1-phi)/(1+phi)).
+Outputs saved to eval/results/.
 """
 import math
 from pathlib import Path
@@ -68,11 +69,9 @@ def run_ar1_experiment(
             # 1. Null run
             null_rows = generate_independent_trajectory(seed=seed, days=14, ar1_phi=phi)
             df_null = pd.DataFrame(null_rows)
-            # Focus on heart rate series
             hr_null = df_null[df_null["measurement_type"] == "heart_rate"].sort_values("measured_at")
             hr_vals_null = hr_null["value_numeric"].values
             
-            # Calibration parameters from baseline
             mu, sd = BASELINES["heart_rate"]
             eff_sd = max(sd, MIN_SD["heart_rate"])
 
@@ -82,13 +81,12 @@ def run_ar1_experiment(
             raw_fired = False
             for v in raw_z_null:
                 d = abs(v) - 0.5
-                c_raw = max(0.0, c_raw + d) if d > 0 else max(0.0, c_raw + d * 0.5)
+                c_raw = max(0.0, c_raw + d)
                 if c_raw >= 3.0 and not raw_fired:
                     raw_cusum_null_alerts += 1
                     raw_fired = True
 
             # 1b. Prewhitened residual CUSUM
-            # Residual filter: e_t = (z_t - phi*z_{t-1}) / sqrt(1 - phi^2)
             innov_null = np.zeros(len(raw_z_null))
             innov_null[0] = raw_z_null[0]
             scale = math.sqrt(max(0.01, 1.0 - phi**2)) if abs(phi) < 0.99 else 1.0
@@ -99,13 +97,12 @@ def run_ar1_experiment(
             pw_fired = False
             for e in innov_null:
                 d = abs(e) - 0.5
-                c_pw = max(0.0, c_pw + d) if d > 0 else max(0.0, c_pw + d * 0.5)
+                c_pw = max(0.0, c_pw + d)
                 if c_pw >= 3.0 and not pw_fired:
                     prewhitened_null_alerts += 1
                     pw_fired = True
 
             # 1c. Variance-corrected EWMA (lambda = 0.2)
-            # Asymptotic variance for AR(1): sigma_EWMA^2 = eff_sd^2 * (lam / (2 - lam)) * (1 + (1-lam)*phi) / (1 - (1-lam)*phi)
             lam = 0.2
             ewma_var_factor = (lam / (2.0 - lam)) * ((1.0 + (1.0 - lam) * phi) / max(0.01, 1.0 - (1.0 - lam) * phi))
             ewma_sigma = eff_sd * math.sqrt(ewma_var_factor)
@@ -120,7 +117,7 @@ def run_ar1_experiment(
                     ewma_fired = True
 
             # 2. Shifted run (1.5 SD shift at day 7.0)
-            shift_seed = seed + 50000 # disjoint shifted trajectory
+            shift_seed = seed + 50000
             shift_rows = generate_independent_trajectory(
                 seed=shift_seed, days=14, ar1_phi=phi, shift_metric="heart_rate",
                 shift_sd=1.5, shift_start_day=7.0
@@ -135,10 +132,11 @@ def run_ar1_experiment(
             c_raw_s = 0.0
             for step_idx, v in enumerate(raw_z_s):
                 d = abs(v) - 0.5
-                c_raw_s = max(0.0, c_raw_s + d) if d > 0 else max(0.0, c_raw_s + d * 0.5)
+                c_raw_s = max(0.0, c_raw_s + d)
                 if c_raw_s >= 3.0:
                     raw_cusum_detections += 1
-                    raw_cusum_delays.append(max(0.0, (step_idx - start_step) * 3 / 24.0))
+                    delay = max(0.0, (step_idx - start_step) / (24.0 / 3.0))
+                    raw_cusum_delays.append(delay)
                     break
 
             # Detect with prewhitened CUSUM
@@ -146,25 +144,27 @@ def run_ar1_experiment(
             innov_s[0] = raw_z_s[0]
             for t in range(1, len(raw_z_s)):
                 innov_s[t] = (raw_z_s[t] - phi * raw_z_s[t - 1]) / scale
+
             c_pw_s = 0.0
             for step_idx, e in enumerate(innov_s):
                 d = abs(e) - 0.5
-                c_pw_s = max(0.0, c_pw_s + d) if d > 0 else max(0.0, c_pw_s + d * 0.5)
+                c_pw_s = max(0.0, c_pw_s + d)
                 if c_pw_s >= 3.0:
                     prewhite_detections += 1
-                    prewhite_delays.append(max(0.0, (step_idx - start_step) * 3 / 24.0))
+                    delay = max(0.0, (step_idx - start_step) / (24.0 / 3.0))
+                    prewhite_delays.append(delay)
                     break
 
-            # Detect with variance-corrected EWMA
-            ewma_s = mu
+            # Detect with EWMA
+            ewma_state_s = mu
             for step_idx, val in enumerate(hr_vals_shift):
-                ewma_s = lam * val + (1.0 - lam) * ewma_s
-                if abs(ewma_s - mu) >= ewma_threshold:
+                ewma_state_s = lam * val + (1.0 - lam) * ewma_state_s
+                if abs(ewma_state_s - mu) >= ewma_threshold:
                     ewma_detections += 1
-                    ewma_delays.append(max(0.0, (step_idx - start_step) * 3 / 24.0))
+                    delay = max(0.0, (step_idx - start_step) / (24.0 / 3.0))
+                    ewma_delays.append(delay)
                     break
 
-        # Compute FAR and CIs
         raw_far = exact_poisson_rate_ci(raw_cusum_null_alerts, exposure_days)
         pw_far = exact_poisson_rate_ci(prewhitened_null_alerts, exposure_days)
         ewma_far = exact_poisson_rate_ci(ewma_null_alerts, exposure_days)
@@ -222,7 +222,105 @@ def run_ar1_experiment(
     plt.close()
     print(f"Saved Figure: {png_path}")
 
+    # Run Task 6 dynamic scenarios: ramp, plateau, recovery
+    run_ar1_scenarios_evaluation(eval_seeds=eval_seeds, output_dir=out_dir)
+
     return df_res
+
+
+def run_ar1_scenarios_evaluation(eval_seeds: list[int], output_dir: Path) -> pd.DataFrame:
+    """Task 6: Dynamic scenario evaluation: Ramp, Plateau, and Recovery shifts.
+    
+    Reports detection delay before vs after prewhitening.
+    """
+    print("\n" + "=" * 80)
+    print("TASK 6: AR(1) PREWHITENING UNDER RAMP, PLATEAU, AND RECOVERY SCENARIOS")
+    print("=" * 80)
+
+    phi = 0.4
+    scale = math.sqrt(1.0 - phi**2)
+    mu, sd = BASELINES["heart_rate"]
+    eff_sd = max(sd, MIN_SD["heart_rate"])
+
+    scenarios = ["Ramp (0 to 2.0 SD over 4d)", "Plateau (Sustained 2.0 SD)", "Recovery (2.0 SD for 3d, then returns)"]
+    scenario_rows = []
+
+    for scen in scenarios:
+        raw_delays = []
+        pw_delays = []
+        raw_det = 0
+        pw_det = 0
+        n_eval = len(eval_seeds[:30])
+
+        for s_idx, seed in enumerate(eval_seeds[:30]):
+            stype = "ramp" if "Ramp" in scen else "step"
+            raw = generate_independent_trajectory(
+                seed=seed + 77000, days=16, freq_h=3, ar1_phi=phi,
+                shift_metric="heart_rate", shift_sd=2.0, shift_start_day=7.0,
+                shift_type=stype
+            )
+            df = pd.DataFrame(raw)
+            hr = df[df["measurement_type"] == "heart_rate"].sort_values("measured_at")
+            vals = hr["value_numeric"].values.copy()
+            start_step = int(7.0 * (24 // 3))
+
+            if "Recovery" in scen:
+                # Revert after day 10 (step 80)
+                end_step = int(10.0 * (24 // 3))
+                vals[end_step:] -= (2.0 * eff_sd)
+
+            raw_z = (vals - mu) / eff_sd
+
+            # 1. Raw CUSUM
+            c_raw = 0.0
+            raw_fired = False
+            for step_idx, v in enumerate(raw_z):
+                d = abs(v) - 0.5
+                c_raw = max(0.0, c_raw + d)
+                if c_raw >= 3.0 and not raw_fired:
+                    raw_det += 1
+                    raw_fired = True
+                    delay = max(0.0, (step_idx - start_step) / (24.0 / 3.0))
+                    raw_delays.append(delay)
+                    break
+
+            # 2. Prewhitened CUSUM
+            innov = np.zeros(len(raw_z))
+            innov[0] = raw_z[0]
+            for t in range(1, len(raw_z)):
+                innov[t] = (raw_z[t] - phi * raw_z[t - 1]) / scale
+
+            c_pw = 0.0
+            pw_fired = False
+            for step_idx, e in enumerate(innov):
+                d = abs(e) - 0.5
+                c_pw = max(0.0, c_pw + d)
+                if c_pw >= 3.0 and not pw_fired:
+                    pw_det += 1
+                    pw_fired = True
+                    delay = max(0.0, (step_idx - start_step) / (24.0 / 3.0))
+                    pw_delays.append(delay)
+                    break
+
+        raw_med, _, _ = bootstrap_median_ci(raw_delays)
+        pw_med, _, _ = bootstrap_median_ci(pw_delays)
+
+        scenario_rows.append({
+            "scenario": scen,
+            "raw_cusum_detection_rate_pct": round((raw_det / n_eval) * 100, 1),
+            "raw_cusum_median_delay_days": round(raw_med, 2) if not math.isnan(raw_med) else "N/A",
+            "prewhitened_cusum_detection_rate_pct": round((pw_det / n_eval) * 100, 1),
+            "prewhitened_cusum_median_delay_days": round(pw_med, 2) if not math.isnan(pw_med) else "N/A",
+            "prewhitening_delay_delta_days": round(pw_med - raw_med, 2) if (not math.isnan(pw_med) and not math.isnan(raw_med)) else "N/A",
+            "runs_evaluated": n_eval,
+        })
+        print(f"[{scen:<35}] Raw Delay: {raw_med:.2f}d -> Prewhitened: {pw_med:.2f}d | Raw Det: {raw_det/n_eval*100:.1f}% vs PW: {pw_det/n_eval*100:.1f}%")
+
+    df_scen = pd.DataFrame(scenario_rows)
+    csv_scen = output_dir / "ar1_scenarios_comparison.csv"
+    df_scen.to_csv(csv_scen, index=False)
+    print(f"Saved CSV: {csv_scen}")
+    return df_scen
 
 
 if __name__ == "__main__":
