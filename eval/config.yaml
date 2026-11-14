@@ -1,0 +1,56 @@
+# MELIORA Evaluation Configuration
+# Defines evaluation parameters, hyperparameter calibration grids, and benchmark settings.
+
+evaluation:
+  null_runs: 200                # Minimum 200 independent null simulation trajectories
+  sweep_reps: 100               # Repetitions per effect-size level in shift sweep
+  exposure_days_per_run: 14     # Standard mission fortnight (14 crew-days)
+  cooldown_days: 3              # Alert de-duplication window (days)
+  significance_level: 0.05      # Two-sided 95% confidence intervals
+
+seeds:
+  tune_start: 10000
+  tune_count: 1000
+  validation_start: 20000
+  validation_count: 1000
+  test_start: 30000
+  test_count: 1000
+
+detectors:
+  ar1_phi_grid: [0.0, 0.2, 0.4, 0.6, 0.8]
+  effect_size_grid: [0.5, 1.0, 1.5, 2.0, 3.0]
+  default_detector: "prewhitened_cusum"  # Recommended detector based on AR(1) findings
+  fast_path_z: -3.5
+  fast_path_min_metrics: 2
+
+baseline:
+  calibration_window_days: 14
+  min_observations: 10
+  method: "robust"              # "robust" (median + 1.4826*MAD) or "mean_sd"
+  sufficiency_thresholds:
+    high:
+      min_days: 10
+      min_coverage: 0.80
+      max_mad_ratio: 0.35
+    moderate:
+      min_days: 7
+      min_coverage: 0.60
+      max_mad_ratio: 0.50
+    low:
+      min_days: 4
+      min_coverage: 0.40
+      max_mad_ratio: 0.75
+    insufficient:
+      min_days: 0
+
+mahalanobis:
+  min_signals: 3
+  covariance_estimator: "LedoitWolf"
+  threshold_method: "empirical_quantile" # "empirical_quantile" or "chi_square"
+  significance_level: 0.05
+
+conformal:
+  target_coverage: 0.90
+  alpha: 0.10
+  aci_gamma: 0.05               # Learning rate for Adaptive Conformal Inference (ACI)
+  baselines: ["persistence", "person_mean"]

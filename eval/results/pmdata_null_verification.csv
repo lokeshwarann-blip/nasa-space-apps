@@ -1,0 +1,7 @@
+participant_id,false_alerts_observed,readiness_score,status,sufficiency
+p11,1,98.9,WATCH,moderate
+p12,1,99.5,WATCH,moderate
+p13,1,100.0,WATCH,moderate
+p14,0,99.4,NOMINAL,moderate
+p15,0,100.0,NOMINAL,moderate
+p16,1,100.0,WATCH,moderate

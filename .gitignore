@@ -76,3 +76,12 @@ logs/
 
 # Local Notes
 Project Notes.txt
+
+# Datasets, local dumps & raw telemetry
+pmdata/
+*.dump
+*.sql
+*.tar.gz
+test/health_readings_scenario.json
+credentials.json
+*.secret

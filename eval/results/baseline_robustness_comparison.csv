@@ -1,0 +1,6 @@
+contamination_fraction,robust_center_median,classical_center_mean,robust_dispersion_mad,classical_dispersion_sd,mad_inflation_pct,sd_inflation_pct
+0.0,62.24,61.97,1.88,2.19,-5.9,9.3
+0.02,62.04,62.57,1.82,4.57,-8.8,128.5
+0.05,62.5,63.86,2.61,7.14,30.5,257.1
+0.1,61.79,64.99,2.51,10.11,25.3,405.6
+0.15,62.2,66.25,2.62,10.54,31.2,427.0

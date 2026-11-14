@@ -1,0 +1,12 @@
+metric_name,value,ci_or_bound
+Independent Simulation Runs,200.0,N/A (Fixed)
+Total Readings Evaluated,138273.0,N/A (Fixed)
+Total Exposure (Crew-Days),2800.0,N/A (Fixed)
+Total Exposure (Crew-Fortnights),200.0,N/A (Fixed)
+Run-level Alert Prob (No Cooldown),0.35,"[0.2841, 0.4205]"
+Run-level Alert Prob (Jeffreys Cross-Check),0.35,"[0.2864, 0.4179]"
+FAR per Crew-Fortnight (No Cooldown),0.45,"[0.3619, 0.5531]"
+FAR per Crew-Day (No Cooldown),0.03214,"[0.02585, 0.03951]"
+Run-level Alert Prob (With Cooldown),0.35,"[0.2841, 0.4205]"
+FAR per Crew-Fortnight (With Cooldown),0.45,"[0.3619, 0.5531]"
+FAR per Crew-Day (With Cooldown),0.03214,"[0.02585, 0.03951]"

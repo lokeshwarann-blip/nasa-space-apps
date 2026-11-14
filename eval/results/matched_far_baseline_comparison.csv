@@ -1,0 +1,4 @@
+model,null_alerts_count,far_per_fortnight,detection_rate_1_0_sd,detection_rate_2_0_sd,runs_evaluated
+Fixed Clinical Range,0,0.0,0.0,0.0,50
+Plain Rolling Z-Score,0,0.0,0.0,0.0,50
+MELIORA Engine,17,0.34,64.0,98.0,50

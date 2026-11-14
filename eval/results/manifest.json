@@ -1,0 +1,22 @@
+{
+  "git_hash": "888be62e27fbb5459e30c04dc30bb1ac39835178",
+  "timestamp_utc": "2026-11-14T19:16:05Z",
+  "config_file": "eval/config.yaml",
+  "seeds": {
+    "tune_seeds_count": 1000,
+    "tune_range": "10000-10999",
+    "validation_seeds_count": 1000,
+    "validation_range": "20000-20999",
+    "final_test_seeds_count": 1000,
+    "final_test_range": "30000-30999"
+  },
+  "environment_versions": {
+    "python": "3.14.3",
+    "numpy": "2.4.6",
+    "scipy": "1.18.0",
+    "pandas": "3.0.5",
+    "sklearn": "1.9.0",
+    "matplotlib": "3.11.2",
+    "pyyaml": "6.0.3"
+  }
+}

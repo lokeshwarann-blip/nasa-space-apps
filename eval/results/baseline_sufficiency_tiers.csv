@@ -1,0 +1,6 @@
+duration_days,overall_sufficiency,heart_rate_tier,sleep_tier,fatigue_tier
+3,insufficient,insufficient,insufficient,insufficient
+5,low,low,low,low
+8,moderate,moderate,moderate,moderate
+14,high,high,high,moderate
+28,high,high,high,moderate

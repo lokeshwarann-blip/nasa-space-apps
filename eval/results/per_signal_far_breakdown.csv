@@ -1,0 +1,12 @@
+signal,alerts_observed,far_per_fortnight,ci_95
+heart_rate,15,0.075,"[0.0420, 0.1237]"
+blood_pressure_systolic,8,0.04,"[0.0173, 0.0788]"
+blood_pressure_diastolic,14,0.07,"[0.0383, 0.1174]"
+body_temperature,18,0.09,"[0.0533, 0.1422]"
+spo2,0,0.0,<= 0.0184
+sleep_duration,14,0.07,"[0.0383, 0.1174]"
+hrv,0,0.0,<= 0.0184
+stress,7,0.035,"[0.0141, 0.0721]"
+mood,6,0.03,"[0.0110, 0.0653]"
+fatigue,8,0.04,"[0.0173, 0.0788]"
+multivariate_mahalanobis,0,0.0,<= 0.0184

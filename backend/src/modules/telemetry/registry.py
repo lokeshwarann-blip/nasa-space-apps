@@ -190,6 +190,17 @@ class MeasurementRegistry:
         )
         self.register(
             MeasurementDefinition(
+                measurement_type="radiation_dose_rate",
+                canonical_unit="uGy/h",
+                allowed_units={"uGy/h"},
+                is_numeric=True,
+                min_value=0.0,
+                max_value=1000.0,
+                has_clinical_threshold=False,
+            )
+        )
+        self.register(
+            MeasurementDefinition(
                 measurement_type="symptom_report",
                 canonical_unit="structured",
                 allowed_units={"structured"},
