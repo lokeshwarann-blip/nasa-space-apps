@@ -54,8 +54,8 @@ All methods tuned on `TUNE_SEEDS` to common target FAR ~0.20 alerts/fortnight an
 
 | Model | Null Alerts Count | FAR per Fortnight | Detection Rate (1.0 SD) | Detection Rate (2.0 SD) | Median Delay |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| Plain Rolling Z-Score | 8 | 0.080 | 68.0% | 100.0% | 1.0d |
-| Bonferroni Per-Signal CUSUM | 0 | 0.000 | 100.0% | 100.0% | 1.25d |
+| Plain Rolling Z-Score | 30 | 0.300 | 71.0% | 100.0% | 1.0d |
+| Bonferroni Per-Signal CUSUM | 9 | 0.090 | 100.0% | 100.0% | 0.38d |
 | Sum-of-Z Statistic | 21 | 0.210 | 37.0% | 100.0% | 2.0d |
 | MELIORA Engine | 25 | 0.250 | 60.0% | 90.0% | 3.0d |
 

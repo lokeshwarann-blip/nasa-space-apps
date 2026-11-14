@@ -338,7 +338,7 @@ def calibrate_matched_far_thresholds(n_tune_seeds: int = 50, target_far: float =
     tune_seeds = TUNE_SEEDS[:n_tune_seeds]
     target_alerts = max(1, int(round(target_far * n_tune_seeds)))
 
-    # Grid search for Plain Z-Score threshold (Z_crit in [1.5, 3.0])
+    # Grid search for matched FAR thresholds on TUNE_SEEDS
     z_scores_null = []
     bonf_max_cusum_null = []
     sum_z_null = []
@@ -348,36 +348,39 @@ def calibrate_matched_far_thresholds(n_tune_seeds: int = 50, target_far: float =
         df = from_measurements(raw)
         fb = fit_frozen_baseline("TUNE", raw, calibration_window_days=7)
 
-        # 1. Plain Z
+        # 1. Plain Z (crew-level max across all 10 signals)
+        max_z_traj = 0.0
         for m in TEN_SIGNALS:
             vals = [r["value_numeric"] for r in raw if r["measurement_type"] == m]
             if len(vals) >= 7:
                 mu, sd = BASELINES[m]
                 z_vals = np.abs((np.array(vals) - mu) / max(sd, MIN_SD[m]))
-                z_scores_null.append(float(np.max(z_vals)))
+                max_z_traj = max(max_z_traj, float(np.max(z_vals)))
+        z_scores_null.append(max_z_traj)
 
-        # 2. Bonferroni CUSUM
-        max_c = 0.0
+        # 2. Bonferroni CUSUM (Page two-sided max across all 10 signals)
+        max_c_traj = 0.0
         for m in TEN_SIGNALS:
             vals = [r["value_numeric"] for r in raw if r["measurement_type"] == m]
             if len(vals) >= 7:
                 mu, sd = BASELINES[m]
                 z_vals = (np.array(vals) - mu) / max(sd, MIN_SD[m])
-                c = 0.0
+                c_pos = 0.0
+                c_neg = 0.0
                 for v in z_vals:
-                    c = max(0.0, c + abs(v) - 0.5)
-                    if c > max_c:
-                        max_c = c
-        bonf_max_cusum_null.append(max_c)
+                    c_pos = max(0.0, c_pos + v - 0.5)
+                    c_neg = max(0.0, c_neg - v - 0.5)
+                    max_c_traj = max(max_c_traj, c_pos, c_neg)
+        bonf_max_cusum_null.append(max_c_traj)
 
         # 3. Sum-of-Z
         latest = {m: np.mean([r["value_numeric"] for r in raw[-24:] if r["measurement_type"] == m]) for m in TEN_SIGNALS}
         sz = sum([((latest[m] - BASELINES[m][0]) / max(BASELINES[m][1], MIN_SD[m]))**2 for m in TEN_SIGNALS if m in latest and not np.isnan(latest[m])])
         sum_z_null.append(sz)
 
-    z_crit = float(np.quantile(z_scores_null, 1.0 - (target_far / 10.0))) if z_scores_null else 2.2
-    h_bonf = float(np.quantile(bonf_max_cusum_null, 1.0 - target_far)) if bonf_max_cusum_null else 3.8
-    s_crit = float(np.quantile(sum_z_null, 1.0 - target_far)) if sum_z_null else 18.5
+    z_crit = float(np.quantile(z_scores_null, 1.0 - target_far)) if z_scores_null else 2.35
+    h_bonf = float(np.quantile(bonf_max_cusum_null, 1.0 - target_far)) if bonf_max_cusum_null else 5.5
+    s_crit = float(np.quantile(sum_z_null, 1.0 - target_far)) if sum_z_null else 2.6
     h_mel = 3.5
 
     calibrated = {
@@ -436,20 +439,28 @@ def run_matched_far_baseline_comparison(n_eval: int = 100, output_dir: Path | No
             )
 
             if m_name == "Plain Rolling Z-Score":
-                # Check null alerts using tuned z_crit
-                mu, sd = BASELINES["heart_rate"]
-                hr_null = [r["value_numeric"] for r in raw_null if r["measurement_type"] == "heart_rate"]
-                z_n = np.abs((np.array(hr_null) - mu) / max(sd, MIN_SD["heart_rate"]))
-                if np.any(z_n >= z_crit):
+                # Check null alerts across all 10 monitored signals
+                trig_null = False
+                for m in TEN_SIGNALS:
+                    mu, sd = BASELINES[m]
+                    v_null = [r["value_numeric"] for r in raw_null if r["measurement_type"] == m]
+                    if not v_null:
+                        continue
+                    z_n = np.abs((np.array(v_null) - mu) / max(sd, MIN_SD[m]))
+                    if np.any(z_n >= z_crit):
+                        trig_null = True
+                        break
+                if trig_null:
                     null_alerts += 1
 
-                # Check 1 SD
+                # Check 1 SD on shifted signal (heart_rate)
                 hr_1 = [r["value_numeric"] for r in raw_1sd if r["measurement_type"] == "heart_rate"]
+                mu, sd = BASELINES["heart_rate"]
                 z_1 = np.abs((np.array(hr_1) - mu) / max(sd, MIN_SD["heart_rate"]))
                 if np.any(z_1[int(7*(24/3)):] >= z_crit):
                     detected_1sd += 1
 
-                # Check 2 SD
+                # Check 2 SD on shifted signal (heart_rate)
                 hr_2 = [r["value_numeric"] for r in raw_2sd if r["measurement_type"] == "heart_rate"]
                 z_2 = np.abs((np.array(hr_2) - mu) / max(sd, MIN_SD["heart_rate"]))
                 if np.any(z_2[int(7*(24/3)):] >= z_crit):
@@ -457,34 +468,49 @@ def run_matched_far_baseline_comparison(n_eval: int = 100, output_dir: Path | No
                     delays.append(1.0)
 
             elif m_name == "Bonferroni Per-Signal CUSUM":
-                mu, sd = BASELINES["heart_rate"]
-                # Null
-                hr_null = [r["value_numeric"] for r in raw_null if r["measurement_type"] == "heart_rate"]
-                z_n = (np.array(hr_null) - mu) / max(sd, MIN_SD["heart_rate"])
-                c = 0.0
-                for v in z_n:
-                    c = max(0.0, c + abs(v) - 0.5)
-                    if c >= h_bonf:
-                        null_alerts += 1
+                # Check null across all 10 signals using two-sided Page CUSUM
+                trig_null = False
+                for m in TEN_SIGNALS:
+                    mu, sd = BASELINES[m]
+                    v_null = [r["value_numeric"] for r in raw_null if r["measurement_type"] == m]
+                    if not v_null:
+                        continue
+                    z_n = (np.array(v_null) - mu) / max(sd, MIN_SD[m])
+                    c_pos = 0.0
+                    c_neg = 0.0
+                    for v in z_n:
+                        c_pos = max(0.0, c_pos + v - 0.5)
+                        c_neg = max(0.0, c_neg - v - 0.5)
+                        if c_pos >= h_bonf or c_neg >= h_bonf:
+                            trig_null = True
+                            break
+                    if trig_null:
                         break
+                if trig_null:
+                    null_alerts += 1
 
-                # 1 SD
+                # Check 1 SD on shifted signal (heart_rate)
                 hr_1 = [r["value_numeric"] for r in raw_1sd if r["measurement_type"] == "heart_rate"]
+                mu, sd = BASELINES["heart_rate"]
                 z_1 = (np.array(hr_1) - mu) / max(sd, MIN_SD["heart_rate"])
-                c = 0.0
+                c_pos = 0.0
+                c_neg = 0.0
                 for v in z_1[int(7*(24/3)):]:
-                    c = max(0.0, c + abs(v) - 0.5)
-                    if c >= h_bonf:
+                    c_pos = max(0.0, c_pos + v - 0.5)
+                    c_neg = max(0.0, c_neg - v - 0.5)
+                    if c_pos >= h_bonf or c_neg >= h_bonf:
                         detected_1sd += 1
                         break
 
-                # 2 SD
+                # Check 2 SD on shifted signal (heart_rate)
                 hr_2 = [r["value_numeric"] for r in raw_2sd if r["measurement_type"] == "heart_rate"]
                 z_2 = (np.array(hr_2) - mu) / max(sd, MIN_SD["heart_rate"])
-                c = 0.0
+                c_pos = 0.0
+                c_neg = 0.0
                 for idx, v in enumerate(z_2[int(7*(24/3)):]):
-                    c = max(0.0, c + abs(v) - 0.5)
-                    if c >= h_bonf:
+                    c_pos = max(0.0, c_pos + v - 0.5)
+                    c_neg = max(0.0, c_neg - v - 0.5)
+                    if c_pos >= h_bonf or c_neg >= h_bonf:
                         detected_2sd += 1
                         delays.append(idx / (24/3))
                         break

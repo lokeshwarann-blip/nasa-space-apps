@@ -1,5 +1,5 @@
 model,null_alerts_count,far_per_fortnight,detection_rate_1_0_sd,detection_rate_2_0_sd,median_delay_days,runs_evaluated
-Plain Rolling Z-Score,8,0.08,68.0,100.0,1.0,100
-Bonferroni Per-Signal CUSUM,0,0.0,100.0,100.0,1.25,100
+Plain Rolling Z-Score,30,0.3,71.0,100.0,1.0,100
+Bonferroni Per-Signal CUSUM,9,0.09,100.0,100.0,0.38,100
 Sum-of-Z Statistic,21,0.21,37.0,100.0,2.0,100
 MELIORA Engine,25,0.25,60.0,90.0,3.0,100

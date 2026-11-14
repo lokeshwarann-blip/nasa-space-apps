@@ -1,7 +1,7 @@
 {
   "target_far_per_fortnight": 0.2,
-  "plain_z_crit": 2.36,
-  "bonferroni_cusum_h": 15.79,
+  "plain_z_crit": 2.35,
+  "bonferroni_cusum_h": 5.49,
   "sum_of_z_crit": 2.63,
   "meliora_cusum_h": 3.5
 }
