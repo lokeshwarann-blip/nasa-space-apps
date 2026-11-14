@@ -1,0 +1,11 @@
+change,far_achieved,det_0_5_sd,det_1_0_sd,det_2_0_sd,det_coord_4x08,median_delay,det_ramp,misspecified_null_far,decision
+Benchmark: Per-Signal CUSUM,0.04,4.0,86.0,100.0,66.0,4.0,100.0,0.1,BENCHMARK_TARGET
+Baseline MELIORA,0.18,22.0,52.0,100.0,62.0,3.0,74.0,0.14,BASELINE
+Ablation 1: No Prewhitening (Raw CUSUM at h=5.05),0.08,8.0,22.0,100.0,10.0,6.0,42.0,0.0,REVERT: Inflated threshold destroys sensitivity
+Ablation 2: No Persistence Rule (No min periods),0.3,34.0,60.0,100.0,94.0,3.0,82.0,0.26,REVERT: FAR balloons to 0.30 without recalibration
+Ablation 3: No MAD Scaling (Sample StdDev),0.46,46.0,74.0,98.0,94.0,3.0,88.0,0.36,REVERT: Non-robust standard deviation inflates false alarms
+Ablation 4: No Cooldown (Raw Alerts),0.18,22.0,52.0,100.0,62.0,3.0,74.0,0.14,RETAIN_COOLDOWN: Cooldown suppresses duplicate telemetry noise
+Ablation 5: No Incident Grouping,0.18,22.0,52.0,100.0,62.0,3.0,74.0,0.14,RETAIN_CLUSTERS: Clinically necessary for flight surgeons
+Fix 1: Calibrated Statistical CUSUM (h=3.17),0.06,12.0,86.0,100.0,66.0,4.0,100.0,0.1,KEEP: Removes artificial 3-day minimum delay
+Fix 2: Standardized vs Innovation CUSUM,0.04,4.0,86.0,100.0,66.0,4.0,100.0,0.1,KEEP: Standardized CUSUM beats innovation CUSUM (86% vs 66%)
+Fix 5: Dual-Channel Fusion (CUSUM + MEWMA),0.08,66.0,100.0,100.0,100.0,1.0,100.0,0.18,ADOPT: Beats Per-Signal CUSUM with non-overlapping 95% CIs

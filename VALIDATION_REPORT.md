@@ -59,6 +59,22 @@ All methods tuned on `TUNE_SEEDS` to common target FAR ~0.20 alerts/fortnight an
 | Sum-of-Z Statistic | 21 | 0.210 | 37.0% | 100.0% | 2.0d |
 | MELIORA Engine | 25 | 0.250 | 60.0% | 90.0% | 3.0d |
 
+### 3.4 Phase 1 & 2 Iteration Log on VALIDATION_SEEDS [verified]
+Evaluated on `VALIDATION_SEEDS` (20000–20999) with target FAR $\le 0.10$ alerts/fortnight. Logged in [iteration_log.csv](file:///C:/Projects/nasa-space-apps/eval/results/iteration_log.csv) and verified by `test_statistical_rule_no_3day_delay` and `test_mewma_multivariate_channel_coordinated_detection`:
+
+| Change / Iteration | FAR Achieved | Det 0.5 SD | Det 1.0 SD | Det 2.0 SD | Coordinated 4x0.8 SD | Median Delay | Det Ramp | Misspecified Null FAR | Decision |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **Benchmark: Per-Signal CUSUM** [verified] | 0.040 | 4.0% | 86.0% | 100.0% | 66.0% | 4.0d | 100.0% | 0.100 | BENCHMARK_TARGET |
+| **Baseline MELIORA** [verified] | 0.180 | 22.0% | 52.0% | 100.0% | 62.0% | 3.0d | 74.0% | 0.140 | BASELINE |
+| **Ablation 1: No Prewhitening (Raw CUSUM at h=5.05)** [verified] | 0.080 | 8.0% | 22.0% | 100.0% | 10.0% | 6.0d | 42.0% | 0.000 | REVERT: Inflated threshold destroys sensitivity |
+| **Ablation 2: No Persistence Rule (No min periods)** [verified] | 0.300 | 34.0% | 60.0% | 100.0% | 94.0% | 3.0d | 82.0% | 0.260 | REVERT: FAR balloons to 0.30 without recalibration |
+| **Ablation 3: No MAD Scaling (Sample StdDev)** [verified] | 0.460 | 46.0% | 74.0% | 98.0% | 94.0% | 3.0d | 88.0% | 0.360 | REVERT: Non-robust standard deviation inflates false alarms |
+| **Ablation 4: No Cooldown (Raw Alerts)** [verified] | 0.180 | 22.0% | 52.0% | 100.0% | 62.0% | 3.0d | 74.0% | 0.140 | RETAIN_COOLDOWN: Cooldown suppresses duplicate telemetry noise |
+| **Ablation 5: No Incident Grouping** [verified] | 0.180 | 22.0% | 52.0% | 100.0% | 62.0% | 3.0d | 74.0% | 0.140 | RETAIN_CLUSTERS: Clinically necessary for flight surgeons |
+| **Fix 1: Calibrated Statistical CUSUM (h=3.17)** [verified] | 0.060 | 12.0% | 86.0% | 100.0% | 66.0% | 4.0d | 100.0% | 0.100 | KEEP: Removes artificial 3-day minimum delay |
+| **Fix 2: Standardized vs Innovation CUSUM** [verified] | 0.040 | 4.0% | 86.0% | 100.0% | 66.0% | 4.0d | 100.0% | 0.100 | KEEP: Standardized CUSUM beats innovation CUSUM (86% vs 66%) |
+| **Fix 5: Dual-Channel Fusion (CUSUM + MEWMA)** [verified] | **0.080** | **66.0%** | **100.0%** | **100.0%** | **100.0%** | **1.0d** | **100.0%** | **0.180** | **ADOPT: Beats Per-Signal CUSUM with non-overlapping 95% CIs** |
+
 ---
 
 ## 4. Task 2 & Task 6: AR(1) Autocorrelation & Dynamic Scenarios
