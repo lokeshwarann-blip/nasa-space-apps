@@ -1,0 +1,6 @@
+null_distribution,calibrated_h_cusum (FAR 0.08),fusion_h_prim (FAR 0.04),fusion_t2_sec (FAR 0.04)
+"Nominal Null (Normal, phi=0.3)",2.33,3.01,35.96
+Student-t(3) Heavy Tails,2.98,3.3,48.61
+Circadian Rhythms,2.33,3.01,35.98
+25% Random Dropouts,1.94,2.0,28.89
+Combined Misspecified Null,3.01,3.7,47.11
