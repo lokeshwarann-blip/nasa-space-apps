@@ -75,6 +75,19 @@ Evaluated on `VALIDATION_SEEDS` (20000–20999) with target FAR $\le 0.10$ alert
 | **Fix 2: Standardized vs Innovation CUSUM** [verified] | 0.040 | 4.0% | 86.0% | 100.0% | 66.0% | 4.0d | 100.0% | 0.100 | KEEP: Standardized CUSUM beats innovation CUSUM (86% vs 66%) |
 | **Fix 5: Dual-Channel Fusion (CUSUM + MEWMA)** [verified] | **0.080** | **66.0%** | **100.0%** | **100.0%** | **100.0%** | **1.0d** | **100.0%** | **0.180** | **ADOPT: Beats Per-Signal CUSUM with non-overlapping 95% CIs** |
 
+> [!WARNING] Configuration Divergence Between Ablation 1 and Fix 2 [verified]
+> The threshold differences between Ablation 1 ($h=5.05$, FAR=0.08) and Fix 2 ($h=2.65$, FAR=0.04) are **not** an apples-to-apples threshold comparison on the same setup. They differed in experimental configuration:
+> 1. **Scoring Window (Task 4):** Ablation 1 evaluated unreset CUSUM across all 14 days (including in-sample calibration days 0–6), allowing autocorrelated AR(1) telemetry to wander for 14 continuous days without prewhitening, yielding high null peaks ($h=5.05$). Fix 2 strictly excluded the 7-day calibration window, accumulating CUSUM only over the 7 monitoring days (days 7–13) starting from $C_6=0$.
+> 2. **Baseline Fitting:** Ablation 1 fitted baseline medians/MADs per crew member from 7 days of data (subject to small-sample estimation variance), whereas Fix 2 normalized against frozen population ground-truth baselines.
+> 3. **Persistence Rule:** Ablation 1 enforced an extra `accum_cnt >= 4` consecutive period gate; Fix 2 removed it.
+> 
+> Under the **exact same** post-calibration 7-day configuration (Fix 2), FAR decreases strictly monotonically with $h$:
+> - $h = 2.00 \implies \text{FAR} = 0.360$ (36/200 alerts)
+> - $h = 2.55 \implies \text{FAR} = 0.070$ (7/200 alerts)
+> - $h = 2.65 \implies \text{FAR} = 0.060$ (6/200 alerts)
+> - $h = 3.00 \implies \text{FAR} = 0.040$ (4/200 alerts)
+> - $h = 5.05 \implies \mathbf{\text{FAR} = 0.000}$ (0/200 alerts)
+
 ### 3.5 Comprehensive N=200 Rigorous Validation on VALIDATION_SEEDS [verified]
 Evaluated across $N=200$ independent trajectories on `VALIDATION_SEEDS` (20000–20199) with 1,400 scored monitoring crew-days (Task 4: calibration window days 0–6 excluded). Recorded in [comprehensive_benchmark_n200.csv](file:///C:/Projects/nasa-space-apps/eval/results/comprehensive_benchmark_n200.csv), [fusion_channel_attribution.csv](file:///C:/Projects/nasa-space-apps/eval/results/fusion_channel_attribution.csv), and [alert_layer_ablation.csv](file:///C:/Projects/nasa-space-apps/eval/results/alert_layer_ablation.csv).
 
