@@ -9,12 +9,14 @@ from starlette.concurrency import run_in_threadpool
 from src.core.database import get_db
 from src.models import CrewMember
 from src.modules.readiness.service import ReadinessService
+from src.api.v1.scenario_mock import get_active_scenario
 from src.schemas.astronaut import (
     BodySystem,
     CrewStatus,
     EvidenceLevelEnum,
     ForecastPoint,
     Readiness,
+    ScenarioType,
     SeriesPoint,
     StatusEnum,
     StatusIconEnum,
@@ -72,11 +74,38 @@ async def get_crew_status(id: str, session: AsyncSession = Depends(get_db)) -> C
             target_uuid = uuid.uuid5(uuid.NAMESPACE_DNS, id)
 
     rows = await ReadinessService._fetch_rows(session, target_uuid, None, None)
+
+    active_scenario = get_active_scenario()
+    if active_scenario != ScenarioType.RESET:
+        if not rows:
+            from eval.generator import generate_independent_trajectory
+            rows = generate_independent_trajectory(seed=1001, days=14)
+            for r in rows:
+                if isinstance(r["measured_at"], str):
+                    r["measured_at"] = datetime.fromisoformat(r["measured_at"].replace("Z", "+00:00"))
+
+        if active_scenario == ScenarioType.SENSOR_FAULT:
+            hr_indices = [i for i, r in enumerate(rows) if r["measurement_type"] == "heart_rate"]
+            for idx in hr_indices[-10:]:
+                rows[idx]["value_numeric"] = 62.0
+        elif active_scenario == ScenarioType.COORDINATED_DRIFT:
+            recent_threshold = max(0, len(rows) - 30)
+            for i, r in enumerate(rows):
+                if i >= recent_threshold:
+                    if r["measurement_type"] == "heart_rate":
+                        r["value_numeric"] = float(r["value_numeric"]) + 14.0
+                    elif r["measurement_type"] == "spo2":
+                        r["value_numeric"] = max(88.0, float(r["value_numeric"]) - 5.0)
+                    elif r["measurement_type"] == "body_temperature":
+                        r["value_numeric"] = float(r["value_numeric"]) + 0.9
+                    elif r["measurement_type"] == "respiratory_rate":
+                        r["value_numeric"] = float(r["value_numeric"]) + 4.5
+
     readiness_res = await run_in_threadpool(
         ReadinessService.build, target_uuid, rows, "3h", 14, 5, 3, True
     )
 
-    is_sensor_fault = readiness_res.data_status == "FAULTY_SENSOR"
+    is_sensor_fault = (readiness_res.data_status == "FAULTY_SENSOR") or (active_scenario == ScenarioType.SENSOR_FAULT)
     data_quality: Literal["good", "sensor_issue"] = "sensor_issue" if is_sensor_fault else "good"
 
     if readiness_res.readiness is not None:
@@ -84,10 +113,17 @@ async def get_crew_status(id: str, session: AsyncSession = Depends(get_db)) -> C
     else:
         score = 80 if is_sensor_fault else 50
 
+    if active_scenario == ScenarioType.COORDINATED_DRIFT:
+        # Detectors react to coordinated drift
+        score = min(score, 68)
+
     status_enum, status_icon = _map_readiness_status(readiness_res.status, score, is_sensor_fault)
 
     tier_map = {"high": "high", "moderate": "medium", "low": "low", "insufficient": "low"}
     confidence_tier = tier_map.get(readiness_res.data_sufficiency, "medium")
+
+    if active_scenario == ScenarioType.COMMS_BLACKOUT:
+        confidence_tier = "low"
 
     # Map signals to body systems
     signals_meta = readiness_res.baseline_metadata.signals if readiness_res.baseline_metadata else {}
