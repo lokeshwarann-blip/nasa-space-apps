@@ -75,6 +75,39 @@ Evaluated on `VALIDATION_SEEDS` (20000–20999) with target FAR $\le 0.10$ alert
 | **Fix 2: Standardized vs Innovation CUSUM** [verified] | 0.040 | 4.0% | 86.0% | 100.0% | 66.0% | 4.0d | 100.0% | 0.100 | KEEP: Standardized CUSUM beats innovation CUSUM (86% vs 66%) |
 | **Fix 5: Dual-Channel Fusion (CUSUM + MEWMA)** [verified] | **0.080** | **66.0%** | **100.0%** | **100.0%** | **100.0%** | **1.0d** | **100.0%** | **0.180** | **ADOPT: Beats Per-Signal CUSUM with non-overlapping 95% CIs** |
 
+### 3.5 Comprehensive N=200 Rigorous Validation on VALIDATION_SEEDS [verified]
+Evaluated across $N=200$ independent trajectories on `VALIDATION_SEEDS` (20000–20199) with 1,400 scored monitoring crew-days (Task 4: calibration window days 0–6 excluded). Recorded in [comprehensive_benchmark_n200.csv](file:///C:/Projects/nasa-space-apps/eval/results/comprehensive_benchmark_n200.csv), [fusion_channel_attribution.csv](file:///C:/Projects/nasa-space-apps/eval/results/fusion_channel_attribution.csv), and [alert_layer_ablation.csv](file:///C:/Projects/nasa-space-apps/eval/results/alert_layer_ablation.csv).
+
+#### Baseline vs Fusion Comparison at Matched Nominal FAR [verified]
+All thresholds calibrated on `TUNE_SEEDS` to nominal target FAR $\approx 0.08 \pm 0.02$ ($z_{\text{crit}}=2.00, h_{\text{cusum}}=2.33, s_{\text{crit}}=5.76, h_{\text{prim}}=3.01, t^2_{\text{sec}}=35.96$):
+
+| Scenario | Metric / Condition | Plain Z-Score | Per-Signal CUSUM | Sum-of-Z | MELIORA Dual Fusion |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **Nominal Null** [verified] | FAR / fortnight (Poisson 95% CI) | 0.080 [0.035, 0.158] | 0.130 [0.069, 0.222] | 0.060 [0.022, 0.131] | **0.040 [0.011, 0.102]** |
+| **Single 0.5 SD (HR)** [verified] | Detection % (Clopper-Pearson 95% CI) | 4.0% [1.7%, 7.7%] | 6.5% [3.5%, 10.9%] | 3.0% [1.1%, 6.4%] | **43.0% [36.0%, 50.2%]** |
+| | Median Delay (Days) | 5.0d | 5.0d | 4.5d | **4.0d** |
+| **Single 1.0 SD (HR)** [verified] | Detection % (Clopper-Pearson 95% CI) | 4.0% [1.7%, 7.7%] | 92.5% [87.9%, 95.7%] | 14.5% [9.9%, 20.2%] | **98.5% [95.7%, 99.7%]** |
+| | Median Delay (Days) | 5.0d | 4.0d | 3.0d | **1.0d** |
+| **Single 2.0 SD (HR)** [verified] | Detection % (Clopper-Pearson 95% CI) | 98.0% [95.0%, 99.5%] | 100.0% [98.2%, 100.0%] | 99.5% [97.2%, 100.0%] | **100.0% [98.2%, 100.0%]** |
+| | Median Delay (Days) | 1.0d | 1.0d | 1.0d | **0.0d** |
+| **Multi 0.5 SD (4 Vitals)** [verified] | Detection % (Clopper-Pearson 95% CI) | 4.0% [1.7%, 7.7%] | 6.5% [3.5%, 10.9%] | 10.5% [6.6%, 15.6%] | **100.0% [98.2%, 100.0%]** |
+| | Median Delay (Days) | 5.0d | 5.0d | 4.0d | **1.0d** |
+| **Multi 0.8 SD (4 Vitals)** [verified] | Detection % (Clopper-Pearson 95% CI) | 4.0% [1.7%, 7.7%] | 85.5% [79.8%, 90.1%] | 71.5% [64.7%, 77.6%] | **100.0% [98.2%, 100.0%]** |
+| | Median Delay (Days) | 5.0d | 5.0d | 3.0d | **0.0d** |
+| **Multi 1.0 SD (4 Vitals)** [verified] | Detection % (Clopper-Pearson 95% CI) | 4.5% [2.1%, 8.4%] | 100.0% [98.2%, 100.0%] | 99.5% [97.2%, 100.0%] | **100.0% [98.2%, 100.0%]** |
+| | Median Delay (Days) | 5.0d | 3.0d | 1.0d | **0.0d** |
+| **Multi 2.0 SD (4 Vitals)** [verified] | Detection % (Clopper-Pearson 95% CI) | 100.0% [98.2%, 100.0%] | 100.0% [98.2%, 100.0%] | 100.0% [98.2%, 100.0%] | **100.0% [98.2%, 100.0%]** |
+| | Median Delay (Days) | 0.0d | 1.0d | 0.0d | **0.0d** |
+| **Ramp 1.5 SD (HR)** [verified] | Detection % (Clopper-Pearson 95% CI) | 16.5% [11.6%, 22.4%] | 99.5% [97.2%, 100.0%] | 34.5% [27.9%, 41.5%] | **100.0% [98.2%, 100.0%]** |
+| | Median Delay (Days) | 5.0d | 4.0d | 5.0d | **3.0d** |
+
+#### Stress Tests & Misspecified Null Inflation (Target <= 2.0x Nominal) [verified]
+- **Student-$t(3)$ Heavy Tails [verified]:** FAR = 0.200 [95% CI: 0.122, 0.309]. Exceeds $2.0 \times 0.08 = 0.160$ nominal threshold (2.5x inflation). Status: **NOT MET**.
+- **Empirical Remediation [verified]:** Calibrating empirical thresholds under misspecification restores FAR $\le 0.08$ ($h_{\text{cusum}}=2.98, h_{\text{prim}}=3.30, t^2_{\text{sec}}=48.61$, recorded in `eval/results/empirical_null_thresholds.csv`).
+- **Circadian Rhythms [verified]:** FAR = 0.040 [0.011, 0.102]. Status: **MET** (no inflation).
+- **25% Random Dropouts [verified]:** FAR = 0.030 [0.006, 0.088]. Status: **MET** (no inflation).
+- **Combined Stress Null [verified]:** FAR = 0.250 [0.162, 0.369]. Exceeds $2.0\times$ nominal. Status: **NOT MET**. Restored by empirical thresholding ($h_{\text{prim}}=3.70, t^2_{\text{sec}}=47.11$).
+
 ---
 
 ## 4. Task 2 & Task 6: AR(1) Autocorrelation & Dynamic Scenarios
