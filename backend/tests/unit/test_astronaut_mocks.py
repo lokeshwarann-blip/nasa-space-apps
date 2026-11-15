@@ -66,8 +66,7 @@ def test_quests_mock(app):
         assert len(validated.quests) == 5
 
 
-def test_quest_log_mock():
-    app = create_app()
+def test_quest_log_mock(app):
     with TestClient(app) as client:
         resp = client.post(
             "/api/v1/quests/quest-resistive/log",
@@ -86,8 +85,7 @@ def test_quest_log_mock():
         assert validated.xp_gained > 0
 
 
-def test_science_context_mock():
-    app = create_app()
+def test_science_context_mock(app):
     with TestClient(app) as client:
         resp = client.get("/api/v1/science-context")
         assert resp.status_code == 200
@@ -115,8 +113,7 @@ def test_science_context_mock():
         assert len(validated.cards) >= 6
 
 
-def test_measurements_pulse_mock():
-    app = create_app()
+def test_measurements_pulse_mock(app):
     with TestClient(app) as client:
         # Accepted pulse
         resp_accepted = client.post(
@@ -145,8 +142,7 @@ def test_measurements_pulse_mock():
         assert validated.status == "accepted"
 
 
-def test_scenario_mock():
-    app = create_app()
+def test_scenario_mock(app):
     with TestClient(app) as client:
         scenarios = ["coordinated_drift", "sensor_fault", "comms_blackout", "dust_storm", "reset"]
         for sc in scenarios:
@@ -163,8 +159,7 @@ def test_scenario_mock():
             assert validated.active_scenario == sc
 
 
-def test_circadian_mock():
-    app = create_app()
+def test_circadian_mock(app):
     with TestClient(app) as client:
         resp = client.get("/api/v1/circadian/CREW-001")
         assert resp.status_code == 200

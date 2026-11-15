@@ -11,6 +11,7 @@ from src.models.user import User
 from src.models.tasks import TaskDefinition, TaskInstance, TaskAuditRecord
 from src.models.alerts import AlertInstance, AlertAuditRecord
 from src.models.sync import SyncEventRecord
+from src.models.quests import Quest, QuestProgress, XPEvent, TeamStreak, Unlock
 
 __all__ = [
     "Base",
