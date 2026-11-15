@@ -12,8 +12,7 @@ from src.schemas.astronaut import (
 )
 
 
-def test_crew_status_mock():
-    app = create_app()
+def test_crew_status_mock(app):
     with TestClient(app) as client:
         resp = client.get("/api/v1/crew/CREW-001/status")
         assert resp.status_code == 200
@@ -46,8 +45,7 @@ def test_crew_status_mock():
         assert validated.crew_id == "CREW-001"
 
 
-def test_quests_mock():
-    app = create_app()
+def test_quests_mock(app):
     with TestClient(app) as client:
         resp = client.get("/api/v1/quests")
         assert resp.status_code == 200
