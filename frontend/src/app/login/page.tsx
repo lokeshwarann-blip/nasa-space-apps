@@ -12,8 +12,8 @@ const API_URL =
 
 export default function LoginPage() {
     const [role, setRole] = useState("Crew Member");
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
+    const [username, setUsername] = useState("astro_watney");
+    const [password, setPassword] = useState("Password123!");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -140,7 +140,11 @@ export default function LoginPage() {
                         className={`${styles.roleButton} ${role === "Crew Member" ? styles.selected : ""
                             }`}
                         aria-pressed={role === "Crew Member"}
-                        onClick={() => setRole("Crew Member")}
+                        onClick={() => {
+                            setRole("Crew Member");
+                            setUsername("astro_watney");
+                            setPassword("Password123!");
+                        }}
                     >
                         Crew Member
                     </button>
@@ -150,7 +154,11 @@ export default function LoginPage() {
                         className={`${styles.roleButton} ${role === "Flight Surgeon" ? styles.selected : ""
                             }`}
                         aria-pressed={role === "Flight Surgeon"}
-                        onClick={() => setRole("Flight Surgeon")}
+                        onClick={() => {
+                            setRole("Flight Surgeon");
+                            setUsername("dr_stone");
+                            setPassword("Password123!");
+                        }}
                     >
                         Flight Surgeon
                     </button>
@@ -158,7 +166,11 @@ export default function LoginPage() {
                         type="button"
                         className={`${styles.roleButton} ${role === "Admin" ? styles.selected : ""}`}
                         aria-pressed={role === "Admin"}
-                        onClick={() => setRole("Admin")}
+                        onClick={() => {
+                            setRole("Admin");
+                            setUsername("admin");
+                            setPassword("Admin123!");
+                        }}
                     >
                         Admin
                     </button>

@@ -10,6 +10,15 @@ from src.api.v1.health import router as health_router
 from src.api.v1.measurements import router as measurements_router
 from src.api.v1.models import router as models_router
 from src.api.v1.readiness import router as readiness_router
+from src.api.v1.quests import router as quests_router
+from src.api.v1.codex import router as codex_router
+from src.api.v1.countermeasures import router as countermeasures_router
+from src.api.v1.circadian import router as circadian_router
+from src.api.v1.immune import router as immune_router
+from src.api.v1.team import router as team_router
+from src.api.v1.scenario import router as scenario_router
+from src.api.v1.environment import router as environment_router
+from src.api.v1.settings import router as settings_router
 from src.api.v1.sync import router as sync_router
 from src.api.v1.tasks import router as tasks_router
 from src.api.v1.trends import router as trends_router
@@ -37,6 +46,15 @@ api_v1_router.include_router(sync_router)
 api_v1_router.include_router(devices_router)
 api_v1_router.include_router(models_router)
 api_v1_router.include_router(readiness_router)
+api_v1_router.include_router(quests_router)
+api_v1_router.include_router(codex_router)
+api_v1_router.include_router(countermeasures_router)
+api_v1_router.include_router(circadian_router)
+api_v1_router.include_router(immune_router)
+api_v1_router.include_router(team_router)
+api_v1_router.include_router(scenario_router)
+api_v1_router.include_router(environment_router)
+api_v1_router.include_router(settings_router)
 
 # Mount Astronaut Experience Mock Endpoints
 api_v1_router.include_router(crew_mock_router)

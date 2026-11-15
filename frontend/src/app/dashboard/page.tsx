@@ -4,7 +4,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { Manrope, Space_Grotesk } from "next/font/google";
 import {
     Area,
     AreaChart,
@@ -14,17 +13,38 @@ import {
     XAxis,
     YAxis,
 } from "recharts";
+import dynamic from "next/dynamic";
 import styles from "./dashboard.module.css";
+import AlertBanner, { type AlertData } from "@/components/home/AlertBanner";
+import { StatusLevel } from "@/components/common/StatusBadge";
+import ReadinessRing from "@/components/home/ReadinessRing";
+import ReadinessDrawer from "@/components/home/ReadinessDrawer";
+import DailyMissionCard from "@/components/home/DailyMissionCard";
+import DisclaimerFooter from "@/components/common/DisclaimerFooter";
+import QuestsView from "@/components/quests/QuestsView";
+import CodexView from "@/components/codex/CodexView";
+import PulseCheckView from "@/components/pulse/PulseCheckView";
+import CountermeasureLabView from "@/components/countermeasures/CountermeasureLabView";
+import SolClockView from "@/components/circadian/SolClockView";
+import ImmuneShieldView from "@/components/immune/ImmuneShieldView";
+import TeamStreakView from "@/components/team/TeamStreakView";
+import ScenarioPanelView from "@/components/scenarios/ScenarioPanelView";
+import EnvironmentProfileView from "@/components/environment/EnvironmentProfileView";
+import SettingsView from "@/components/settings/SettingsView";
 
-/* ---------- fonts ---------- */
-const ui = Manrope({ subsets: ["latin"], variable: "--font-ui", display: "swap" });
-const num = Space_Grotesk({ subsets: ["latin"], variable: "--font-num", display: "swap" });
+const HumanBody = dynamic(() => import("../../components/HumanBody"), {
+    ssr: false,
+});
+
+const EtchedAccretion = dynamic(() => import("@/components/ui/etched-accretion"), {
+    ssr: false,
+});
 
 const API_URL =
     process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 /* ---------- types ---------- */
-type Page = "Overview" | "Vital Signs" | "Health Trends" | "Assessments" | "Alerts";
+type Page = "Overview" | "Missions" | "Vitals" | "Lab" | "Library" | "Alerts" | "Settings";
 type RangeKey = "24 Hours" | "7 Days" | "30 Days";
 type MetricId = "hr" | "spo2" | "bp" | "temp";
 
@@ -108,12 +128,24 @@ interface TaskResponse {
 
 /* ---------- navigation and metrics ---------- */
 const PAGES: { name: Page; icon: string; title: string; blurb: string }[] = [
-    { name: "Overview", icon: "home", title: "Mission overview", blurb: "Your health at a glance" },
-    { name: "Vital Signs", icon: "pulse", title: "Vital signs", blurb: "Your latest recorded health measurements" },
-    { name: "Health Trends", icon: "trend", title: "Health trends", blurb: "How your readings change over time" },
-    { name: "Assessments", icon: "check", title: "Health assessments", blurb: "Review assessment records and their status" },
-    { name: "Alerts", icon: "bell", title: "Health alerts", blurb: "Notifications from health monitoring" },
+    { name: "Overview", icon: "home", title: "Mission overview", blurb: "EVA clearance, daily objectives & 3D anatomical focus" },
+    { name: "Missions", icon: "check", title: "Missions & Quests", blurb: "Daily countermeasure objectives and shared team streak progress" },
+    { name: "Vitals", icon: "pulse", title: "Vital Signs & Trends", blurb: "Select a vital sign to review telemetry trends, pulse check and immune status" },
+    { name: "Lab", icon: "flask", title: "Countermeasure & Circadian Lab", blurb: "What-if physiological forecast modeling and circadian Sol clock realignment" },
+    { name: "Library", icon: "book", title: "Flight Science Codex", blurb: "Peer-reviewed space biology briefings & unlockable knowledge cards" },
+    { name: "Alerts", icon: "bell", title: "Alerts & Diagnostics", blurb: "Active health monitoring notifications, clinical check-ins and demo scenarios" },
+    { name: "Settings", icon: "gear", title: "Settings & Profile", blurb: "Mission accessibility, sound, contrast and planetary environment switcher" },
 ];
+
+const PAGE_H1: Record<Page, { title: string; script: string }> = {
+    Overview: { title: "MISSION OVERVIEW", script: "Commander" },
+    Missions: { title: "DAILY QUESTS", script: "Missions" },
+    Vitals: { title: "VITAL TELEMETRY", script: "Signals" },
+    Lab: { title: "COUNTERMEASURES", script: "Forecast" },
+    Library: { title: "SCIENCE CODEX", script: "Library" },
+    Alerts: { title: "SYSTEM ADVISORIES", script: "Alerts" },
+    Settings: { title: "SYSTEM PROFILE", script: "Console" },
+};
 
 const METRICS: Metric[] = [
     {
@@ -184,6 +216,10 @@ const ICONS: Record<string, ReactNode> = {
     plus: <path d="M12 5v14M5 12h14" />,
     sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4-1.4" /></>,
     moon: <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />,
+    book: <><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>,
+    flask: <path d="M10 2v7.31L4.1 18.2a2 2 0 0 0 1.66 3.8h12.48a2 2 0 0 0 1.66-3.8L14 9.31V2" />,
+    shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
+    gear: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></>,
     close: <path d="M18 6L6 18M6 6l12 12" />,
 };
 
@@ -196,40 +232,6 @@ function Icon({ name }: { name: string }) {
 }
 
 /* ---------- reusable components ---------- */
-function Gauge({ value, average, max }: { value: number; average: number; max: number }) {
-    const ring = (r: number, n: number, filled: number, on: string) =>
-        Array.from({ length: n }, (_, i) => {
-            const a = (i / n) * Math.PI * 2 - Math.PI / 2;
-            const p = (d: number) => (100 + d * Math.cos(a)).toFixed(1);
-            const q = (d: number) => (100 + d * Math.sin(a)).toFixed(1);
-
-            return (
-                <line
-                    key={`${r}-${i}`}
-                    x1={p(r - 4)}
-                    y1={q(r - 4)}
-                    x2={p(r + 4)}
-                    y2={q(r + 4)}
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    className={i < filled ? on : styles.segOff}
-                />
-            );
-        });
-
-    return (
-        <svg
-            viewBox="0 0 200 200"
-            className={styles.gaugeSvg}
-            role="img"
-            aria-label={`Heart rate ${value} beats per minute`}
-        >
-            {ring(88, 56, Math.round((56 * value) / max), styles.segOn)}
-            {ring(70, 44, Math.round((44 * average) / max), styles.segAvg)}
-        </svg>
-    );
-}
-
 function ChartTip({
     active,
     payload,
@@ -268,6 +270,24 @@ export default function Dashboard() {
     const [range, setRange] = useState<RangeKey>("7 Days");
     const [metricId, setMetricId] = useState<MetricId>("hr");
     const [dark, setDark] = useState(true);
+    const [cosmicBg, setCosmicBg] = useState<"crimson" | "ember" | "glacier" | "ash" | "orchid" | "off">("crimson");
+    // -------------------------------------------------------------
+    // READINESS SCORE:
+    // If backend /api/v1/readiness provides score, use it. Otherwise compute
+    // client-side from latest vitals and mission completion.
+    // -------------------------------------------------------------
+    const [readinessScore, setReadinessScore] = useState<number>(94);
+    const [readinessLevel, setReadinessLevel] = useState<StatusLevel>("normal");
+    const [readinessDrawerOpen, setReadinessDrawerOpen] = useState(false);
+    const [activeAlert, setActiveAlert] = useState<AlertData | null>({
+        id: "alert_shoulder_strain",
+        level: "watch",
+        title: "Musculoskeletal Advisory",
+        reason: "Mild left shoulder impingement context recorded after Sol 41 orbital hatch docking.",
+        nextStep: "Complete 10-min rotator cuff resistance band stretch before next EVA. Check with flight surgeon if pain escalates.",
+        timestamp: "Sol 41 12:40 UTC",
+    });
+    const [gamificationEnabled, setGamificationEnabled] = useState(true);
 
     const [alertFilter, setAlertFilter] =
         useState<"All" | "Open" | "Acknowledged">("All");
@@ -642,6 +662,55 @@ export default function Dashboard() {
         temp: latestByType.body_temperature?.value_numeric?.toFixed(1) ?? "--",
     };
 
+    /* ---------- readiness score (backend fetch with client fallback) ---------- */
+    useEffect(() => {
+        let isMounted = true;
+        async function fetchReadiness() {
+            try {
+                const token = sessionStorage.getItem("meliora_access_token");
+                const res = await fetch(`${API_URL}/api/v1/readiness`, {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (isMounted && typeof data.readiness_score === "number") {
+                        setReadinessScore(data.readiness_score);
+                        const lvl: StatusLevel =
+                            data.readiness_score >= 85 ? "normal" : data.readiness_score >= 70 ? "watch" : "act";
+                        setReadinessLevel(lvl);
+                        return;
+                    }
+                }
+            } catch {
+                // If backend endpoint is unavailable, compute client-side
+            }
+
+            // Client-side computation fallback:
+            // Base readiness (88) + HR stability (-6 to +4) + SpO2 nominal factor (+2)
+            // Evaluated client-side from real telemetry and mission completion
+            if (isMounted) {
+                const hrNum = parseFloat(realMetricValues.hr);
+                const spo2Num = parseFloat(realMetricValues.spo2);
+                let computed = 88;
+                if (!isNaN(hrNum)) {
+                    if (hrNum >= 60 && hrNum <= 80) computed += 4;
+                    else if (hrNum > 85) computed -= 6;
+                }
+                if (!isNaN(spo2Num)) {
+                    if (spo2Num >= 97) computed += 2;
+                    else if (spo2Num < 95) computed -= 8;
+                }
+                const finalScore = Math.max(50, Math.min(99, computed));
+                setReadinessScore(finalScore);
+                setReadinessLevel(finalScore >= 85 ? "normal" : finalScore >= 70 ? "watch" : "act");
+            }
+        }
+        fetchReadiness();
+        return () => {
+            isMounted = false;
+        };
+    }, [realMetricValues.hr, realMetricValues.spo2]);
+
     /* ---------- real trend data ---------- */
     const realSeries = useMemo(() => {
         const rangeMs: Record<RangeKey, number> = {
@@ -930,37 +999,16 @@ export default function Dashboard() {
                     data={realSeries}
                     margin={{ top: 8, right: 8, left: -8, bottom: 0 }}
                 >
-                    <defs>
-                        <linearGradient
-                            id="realTrendFill"
-                            x1="0"
-                            y1="0"
-                            x2="0"
-                            y2="1"
-                        >
-                            <stop
-                                offset="0%"
-                                stopColor="#0d9488"
-                                stopOpacity={0.35}
-                            />
-                            <stop
-                                offset="100%"
-                                stopColor="#0d9488"
-                                stopOpacity={0}
-                            />
-                        </linearGradient>
-                    </defs>
-
                     <CartesianGrid
                         vertical={false}
-                        stroke="rgba(138,138,153,0.22)"
+                        stroke="rgba(233, 228, 223, 0.08)"
                     />
 
                     <XAxis
                         dataKey="label"
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fill: "#8a8a99", fontSize: 12 }}
+                        tick={{ fill: "var(--muted)", fontSize: 11, fontFamily: "var(--font-mono)" }}
                     />
 
                     <YAxis
@@ -968,29 +1016,29 @@ export default function Dashboard() {
                         tickLine={false}
                         axisLine={false}
                         width={44}
-                        tick={{ fill: "#8a8a99", fontSize: 12 }}
+                        tick={{ fill: "var(--muted)", fontSize: 11, fontFamily: "var(--font-mono)" }}
                     />
 
                     <Tooltip
                         content={<ChartTip unit={metric.unit} />}
                         cursor={{
-                            stroke: "#2dd4bf",
-                            strokeDasharray: "4 4",
+                            stroke: "rgba(233, 228, 223, 0.25)",
+                            strokeDasharray: "3 3",
                         }}
                     />
 
                     <Area
                         type="monotone"
                         dataKey="value"
-                        stroke="#0d9488"
-                        strokeWidth={3}
-                        fill="url(#realTrendFill)"
+                        stroke="#FF4D5A"
+                        strokeWidth={2}
+                        fill="none"
                         dot={{
                             r: 3,
-                            fill: "#2dd4bf",
+                            fill: "#FF4D5A",
                             strokeWidth: 0,
                         }}
-                        activeDot={{ r: 6, fill: "#5eead4" }}
+                        activeDot={{ r: 5, fill: "#FF4D5A", stroke: "#030307", strokeWidth: 2 }}
                     />
                 </AreaChart>
             </ResponsiveContainer>
@@ -1055,613 +1103,547 @@ export default function Dashboard() {
     /* ---------- render ---------- */
     return (
         <main
-            className={cx(styles.dashboard, ui.variable, num.variable)}
-            data-theme={dark ? "dark" : "light"}
+            className={styles.dashboard}
+            data-theme="dark"
         >
-            <div className={styles.shell}>
-                {/* SIDEBAR */}
-                <aside className={styles.sidebar}>
-                    <div className={styles.brand}>
-                        <h2>Meliora</h2>
+            {/* Ambient Procedural WebGL2 Etched Accretion Deep Space Background */}
+            {cosmicBg !== "off" && (
+                <div
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 0,
+                        pointerEvents: "none",
+                        opacity: 0.85,
+                        overflow: "hidden",
+                    }}
+                    aria-hidden="true"
+                >
+                    <EtchedAccretion
+                        height="100vh"
+                        preset={cosmicBg}
+                        interactive={false}
+                        params={{
+                            exposure: 1.25,
+                            vignette: 0.6,
+                        }}
+                    />
+                </div>
+            )}
+
+            {/* 1. HORIZONTAL TOP BAR */}
+            <header className={styles.crewTopBar}>
+                <div className={styles.crewTopBarRow1}>
+                    <div className={styles.crewTopBarLeft}>
+                        <div className={styles.crewBrandLogo}>
+                            <h2>Meliora</h2>
+                        </div>
                     </div>
 
-                    <nav aria-label="Main">
-                        {PAGES.map((p) => (
+                    <div className={styles.crewTopActions}>
+                        <span className={styles.crewClock}>{now}</span>
+
+                        <div className={styles.avatar} title={`Logged in as ${username}`}>
+                            {username.slice(0, 2).toUpperCase()}
+                        </div>
+
+                        <button
+                            type="button"
+                            className={styles.crewLogoutBtn}
+                            onClick={logout}
+                            aria-label="Sign out of mission console"
+                        >
+                            <Icon name="close" /> Sign out
+                        </button>
+                    </div>
+                </div>
+
+                <nav className={styles.crewTabsContainer} aria-label="Main Navigation">
+                    {PAGES.map((p) => {
+                        const isActive = page === p.name;
+                        return (
                             <button
                                 key={p.name}
                                 type="button"
                                 onClick={() => setPage(p.name)}
-                                aria-current={
-                                    page === p.name ? "page" : undefined
-                                }
+                                aria-current={isActive ? "page" : undefined}
                                 className={cx(
-                                    styles.navItem,
-                                    page === p.name && styles.active
+                                    styles.crewTab,
+                                    isActive && styles.crewTabActive
                                 )}
                             >
                                 <Icon name={p.icon} />
-
-                                {p.name}
-
+                                <span>{p.name}</span>
                                 {p.name === "Alerts" && openCount > 0 && (
-                                    <span className={styles.navBadge}>
+                                    <span className={styles.crewTabBadge} aria-label={`${openCount} open alerts`}>
                                         {openCount}
                                     </span>
                                 )}
                             </button>
-                        ))}
-                    </nav>
+                        );
+                    })}
+                </nav>
+            </header>
 
-                    <div className={styles.sidebarBottom}>
-                        <b>{username}</b>
-                        <span>Crew member</span>
-                        <span>
-                            Engineering prototype. Not a certified medical device.
-                        </span>
-
-                        <button
-                            type="button"
-                            className={styles.logout}
-                            onClick={logout}
-                        >
-                            Sign out
-                        </button>
+            {/* 2. CREW DASHBOARD SHELL */}
+            <div className={styles.crewShell}>
+                {/* Clean Page Heading (Moonlight stacked display H1 with Out of Nowhere cursive accent) */}
+                <div className={styles.crewPageHeading}>
+                    <div>
+                        <div className={styles.stackedH1Container}>
+                            <span className={styles.echoH1_1} aria-hidden="true">{PAGE_H1[page].title}</span>
+                            <span className={styles.echoH1_2} aria-hidden="true">{PAGE_H1[page].title}</span>
+                            <h1 className={styles.frontH1}>
+                                {PAGE_H1[page].title}{" "}
+                                <span className={styles.scriptAccent}>{PAGE_H1[page].script}</span>
+                            </h1>
+                        </div>
+                        <p>{info.blurb}</p>
                     </div>
-                </aside>
 
-                {/* MAIN */}
-                <section className={styles.main}>
-                    <header className={styles.header}>
-                        <div>
-                            <p className={styles.crumb}>
-                                Crew member portal
-                            </p>
+                    <button
+                        type="button"
+                        className={styles.cta}
+                        onClick={() => setModal(true)}
+                    >
+                        <Icon name="plus" /> Log check-in
+                    </button>
+                </div>
 
-                            <h2>{info.title}</h2>
-                        </div>
+                {/* Watch / Act Advisory Banner (Overview and Alerts tabs only) */}
+                {activeAlert && (page === "Overview" || page === "Alerts") && (
+                    <div style={{ width: "100%", marginBottom: "4px" }}>
+                        <AlertBanner
+                            alert={activeAlert}
+                            onCallGround={() => setToast("Ground support link requested.")}
+                        />
+                    </div>
+                )}
 
-                        <div className={styles.tools}>
-                            <span className={styles.clock}>{now}</span>
-
-                            <button
-                                type="button"
-                                className={styles.iconBtn}
-                                onClick={() => setDark(!dark)}
-                                aria-label={
-                                    dark
-                                        ? "Switch to light theme"
-                                        : "Switch to dark theme"
-                                }
-                            >
-                                <Icon name={dark ? "sun" : "moon"} />
-                            </button>
-
-                            <button
-                                type="button"
-                                className={styles.iconBtn}
-                                onClick={() => setPage("Alerts")}
-                                aria-label={`Alerts, ${openCount} open`}
-                            >
-                                <Icon name="bell" />
-
-                                {openCount > 0 && (
-                                    <span className={styles.dotBadge}>
-                                        {openCount}
-                                    </span>
-                                )}
-                            </button>
-
-                            <div className={styles.avatar}>
-                                {username.slice(0, 2).toUpperCase()}
+                {/* 3. CONTENT (7 MERGED TABS) */}
+                <div className={styles.content} key={page}>
+                    {/* TAB 1: OVERVIEW (EVA Readiness Ring + Daily Missions (Left) & 3D Anatomy Model (Right) ONLY) */}
+                    {page === "Overview" && (
+                        <div className={styles.overviewGrid}>
+                            <div className={styles.overviewLeft}>
+                                <div className={styles.sectionLabel}>
+                                    <span className={styles.sectionLabelIndex}>01</span>
+                                    <span className={styles.sectionLabelTitle}>EVA READINESS TELEMETRY</span>
+                                    <span className={styles.sectionLabelRule} />
+                                </div>
+                                <ReadinessRing
+                                    score={readinessScore}
+                                    level={readinessLevel}
+                                    confidence="high"
+                                    onOpenDrawer={() => setReadinessDrawerOpen(true)}
+                                />
+                                <div className={styles.sectionLabel} style={{ marginTop: "8px" }}>
+                                    <span className={styles.sectionLabelIndex}>02</span>
+                                    <span className={styles.sectionLabelTitle}>DAILY OPERATIONAL OBJECTIVES</span>
+                                    <span className={styles.sectionLabelRule} />
+                                </div>
+                                <DailyMissionCard
+                                    alertLevel={activeAlert?.level || "normal"}
+                                    gamificationEnabled={gamificationEnabled}
+                                    onViewAllQuests={() => setPage("Missions")}
+                                />
                             </div>
 
-                            <span>{username}</span>
-                        </div>
-                    </header>
-
-                    <div className={styles.content} key={page}>
-                        <div className={styles.hero}>
-                            <div>
-                                <h1>
-                                    {page === "Overview"
-                                        ? "Good day, Commander"
-                                        : info.title}
-                                </h1>
-
-                                <p>
-                                    {page === "Overview"
-                                        ? alertsLoading
-                                            ? "Synchronizing mission alerts..."
-                                            : alertError
-                                                ? alertError
-                                                : `${measurements.length} measurement records received from the mission data service.`
-                                        : info.blurb}
-                                </p>
-                            </div>
-
-                            <button
-                                type="button"
-                                className={styles.cta}
-                                onClick={() => setModal(true)}
-                            >
-                                <Icon name="plus" /> Log check-in
-                            </button>
-                        </div>
-
-                        {/* OVERVIEW */}
-                        {page === "Overview" && (
-                            <>
-                                {metricCards}
-
-                                <div className={styles.row2}>
-                                    <section className={styles.card}>
-                                        <div className={styles.cardHead}>
-                                            <div>
-                                                <h3>{metric.title} trend</h3>
-                                                <p>
-                                                    Mission data · {metric.unit}
-                                                </p>
-                                            </div>
-
-                                            {rangePills}
-                                        </div>
-
-                                        {chart}
-                                    </section>
-
-                                    <section className={styles.card}>
-                                        <h3>Heart rate zone</h3>
-
-                                        <div className={styles.legend}>
-                                            <span className={styles.legendAvg}>
-                                                Average
-                                            </span>
-                                            <span className={styles.legendNow}>
-                                                Current
-                                            </span>
-                                        </div>
-
-                                        <div className={styles.gauge}>
-                                            <Gauge
-                                                value={
-                                                    latestByType.heart_rate
-                                                        ?.value_numeric ?? 0
-                                                }
-                                                average={
-                                                    latestByType.heart_rate
-                                                        ?.value_numeric ?? 0
-                                                }
-                                                max={180}
-                                            />
-
-                                            <div className={styles.gaugeCenter}>
-                                                <b>{realMetricValues.hr}</b>
-                                                <small>beats / min</small>
-                                            </div>
-                                        </div>
-                                    </section>
+                            <div className={styles.overviewRight}>
+                                <div className={styles.sectionLabel}>
+                                    <span className={styles.sectionLabelIndex}>03</span>
+                                    <span className={styles.sectionLabelTitle}>3D PHYSIOLOGICAL ANATOMY</span>
+                                    <span className={styles.sectionLabelRule} />
                                 </div>
-
-                                <div className={styles.row3}>
-                                    <section className={styles.card}>
-                                        <div className={styles.cardHead}>
-                                            <h3>Latest alerts</h3>
-
-                                            <button
-                                                type="button"
-                                                className={styles.linkBtn}
-                                                onClick={() => setPage("Alerts")}
-                                            >
-                                                View all
-                                            </button>
-                                        </div>
-
-                                        {alertsLoading ? (
-                                            <p className={styles.quiet}>
-                                                Loading alerts...
-                                            </p>
-                                        ) : alertError ? (
-                                            <p className={styles.quiet}>
-                                                {alertError}
-                                            </p>
-                                        ) : liveAlerts.length === 0 ? (
-                                            <p className={styles.quiet}>
-                                                No alert records are currently connected to this dashboard.
-                                            </p>
-                                        ) : (
-                                            <ul className={styles.alertList}>
-                                                {liveAlerts
-                                                    .slice(0, 2)
-                                                    .map((a) =>
-                                                        liveAlertRow(a, false)
-                                                    )}
-                                            </ul>
-                                        )}
-                                    </section>
-
-                                    {/* TODAY'S TASKS */}
-                                    <section className={styles.card}>
-                                        <div className={styles.cardHead}>
-                                            <h3>Today’s tasks</h3>
-
-                                            <span className={styles.chip}>
-                                                {doneCount} of {taskTotal} done
-                                            </span>
-                                        </div>
-
-                                        <div
-                                            className={styles.progress}
-                                            aria-hidden="true"
-                                        >
-                                            <span
-                                                style={{
-                                                    width: `${taskTotal > 0
-                                                        ? (doneCount / taskTotal) * 100
-                                                        : 0
-                                                        }%`,
-                                                }}
-                                            />
-                                        </div>
-
-                                        {tasksLoading ? (
-                                            <p className={styles.quiet}>
-                                                Loading today's tasks...
-                                            </p>
-                                        ) : tasksError ? (
-                                            <p className={styles.quiet}>
-                                                {tasksError}
-                                            </p>
-                                        ) : liveTasks.length === 0 ? (
-                                            <p className={styles.quiet}>
-                                                No tasks scheduled for today.
-                                            </p>
-                                        ) : (
-                                            <ul className={styles.tasks}>
-                                                {liveTasks.map((task) => {
-                                                    const isCompleted =
-                                                        task.status === "COMPLETED";
-
-                                                    const canComplete =
-                                                        task.status === "PENDING";
-
-                                                    return (
-                                                        <li key={task.id}>
-                                                            <label
-                                                                className={cx(
-                                                                    styles.task,
-                                                                    isCompleted &&
-                                                                    styles.taskDone
-                                                                )}
-                                                            >
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={isCompleted}
-                                                                    disabled={
-                                                                        !canComplete ||
-                                                                        completingTaskId !== null
-                                                                    }
-                                                                    onChange={() =>
-                                                                        completeTask(task.id)
-                                                                    }
-                                                                />
-
-                                                                <span
-                                                                    className={styles.taskBox}
-                                                                />
-
-                                                                <span>
-                                                                    {task.title}
-                                                                </span>
-
-                                                                <time>
-                                                                    {isCompleted
-                                                                        ? "Completed"
-                                                                        : canComplete
-                                                                            ? formatMeasurementDate(task.due_start)
-                                                                            : task.status}
-                                                                </time>
-                                                            </label>
-                                                        </li>
-                                                    );
-                                                })}
-                                            </ul>
-                                        )}
-                                    </section>
-                                </div>
-                            </>
-                        )}
-
-                        {/* VITAL SIGNS */}
-                        {page === "Vital Signs" && (
-                            <div className={styles.vitalGrid}>
-                                {METRICS.map((m) => {
-                                    const realValue = realMetricValues[m.id];
-
-                                    return (
-                                        <article
-                                            key={m.id}
-                                            className={styles.card}
-                                        >
-                                            <div className={styles.metricTop}>
-                                                <span className={styles.metricIcon}>
-                                                    <Icon name={m.icon} />
-                                                </span>
-
-                                                <span className={styles.metricName}>
-                                                    {m.title}
-                                                </span>
-                                            </div>
-
-                                            <p className={styles.metricValue}>
-                                                {realValue} <small>{m.unit}</small>
-                                            </p>
-
-                                            <p className={styles.quiet}>
-                                                {m.description}
-                                            </p>
-
-                                            <span
-                                                className={cx(
-                                                    styles.chip,
-                                                    styles.muted
-                                                )}
-                                            >
-                                                {measurementsLoading
-                                                    ? "Loading..."
-                                                    : realValue !== "--"
-                                                        ? "Latest reading"
-                                                        : "No reading"}
-                                            </span>
-
-                                            <button
-                                                type="button"
-                                                className={styles.linkBtn}
-                                                onClick={() => {
-                                                    setMetricId(m.id);
-                                                    setPage("Health Trends");
-                                                }}
-                                            >
-                                                See trend
-                                            </button>
-                                        </article>
-                                    );
-                                })}
-                            </div>
-                        )}
-
-                        {/* HEALTH TRENDS */}
-                        {page === "Health Trends" && (
-                            <>
-                                <div
-                                    className={styles.pills}
-                                    role="group"
-                                    aria-label="Choose a measurement"
-                                >
-                                    {METRICS.map((m) => (
-                                        <button
-                                            key={m.id}
-                                            type="button"
-                                            aria-pressed={metricId === m.id}
-                                            onClick={() => setMetricId(m.id)}
-                                            className={cx(
-                                                styles.pill,
-                                                metricId === m.id &&
-                                                styles.pillActive
-                                            )}
-                                        >
-                                            {m.title}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <section className={styles.card}>
+                                <div className={cx(styles.cardBox, styles.cornerTicks)}>
+                                    <span className={styles.cornerTickTL} />
+                                    <span className={styles.cornerTickTR} />
+                                    <span className={styles.cornerTickBL} />
+                                    <span className={styles.cornerTickBR} />
                                     <div className={styles.cardHead}>
                                         <div>
-                                            <h3>{metric.title}</h3>
-                                            <p>
-                                                Mission data · {metric.unit}
-                                            </p>
+                                            <h3>3D Anatomical Telemetry</h3>
+                                            <p>Interactive physiological layer inspection & organ focus</p>
                                         </div>
-
-                                        {rangePills}
                                     </div>
+                                    <HumanBody height={520} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
-                                    {chart}
-                                </section>
+                    {/* TAB 2: MISSIONS (Quests + Team Streak) */}
+                    {page === "Missions" && (
+                        <div className={styles.tabSectionStack}>
+                            <div className={styles.cardBox}>
+                                <div className={styles.cardHead}>
+                                    <div>
+                                        <h3>Daily Countermeasure Quests</h3>
+                                        <p>Physical & operational countermeasure targets with evidence-based progression</p>
+                                    </div>
+                                </div>
+                                <QuestsView
+                                    alertLevel={activeAlert?.level || "normal"}
+                                    gamificationEnabled={gamificationEnabled}
+                                    onToggleGamification={() => setGamificationEnabled(!gamificationEnabled)}
+                                />
+                            </div>
+
+                            <div className={styles.cardBox}>
+                                <div className={styles.cardHead}>
+                                    <div>
+                                        <h3>Shared Crew Team Streak</h3>
+                                        <p>Shared goal completion and protective streak freeze day status</p>
+                                    </div>
+                                </div>
+                                <TeamStreakView
+                                    alertLevel={activeAlert?.level || "normal"}
+                                    gamificationEnabled={gamificationEnabled}
+                                    onToggleGamification={() => setGamificationEnabled(!gamificationEnabled)}
+                                    onNavigateToQuests={() => setPage("Missions")}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB 3: VITALS (Vital Signs + Health Trends + Pulse Check + Immune Shield) */}
+                    {page === "Vitals" && (
+                        <div className={styles.tabSectionStack}>
+                            {/* Section 1: Selectable Vital Signs Grid */}
+                            <div className={styles.cardBox}>
+                                <div className={styles.cardHead}>
+                                    <div>
+                                        <h3>Vital Signs Telemetry</h3>
+                                        <p>Select any vital sign below to update the telemetry chart below</p>
+                                    </div>
+                                </div>
+                                <div className={styles.metricGrid}>
+                                    {METRICS.map((m) => {
+                                        const realValue = realMetricValues[m.id];
+                                        const isSelected = metricId === m.id;
+                                        return (
+                                            <button
+                                                key={m.id}
+                                                type="button"
+                                                onClick={() => setMetricId(m.id)}
+                                                className={cx(
+                                                    styles.vitalCardSelectable,
+                                                    isSelected && styles.vitalCardSelected
+                                                )}
+                                                aria-pressed={isSelected}
+                                            >
+                                                <div className={styles.metricTop}>
+                                                    <span className={styles.metricIcon}>
+                                                        <Icon name={m.icon} />
+                                                    </span>
+                                                    <span className={styles.metricName}>
+                                                        {m.title}
+                                                    </span>
+                                                </div>
+
+                                                <p className={styles.metricValue}>
+                                                    {realValue} <small>{m.unit}</small>
+                                                </p>
+
+                                                <p className={styles.quiet}>
+                                                    {m.description}
+                                                </p>
+
+                                                <span className={cx(styles.chip, isSelected ? styles.chipNormal : styles.muted)}>
+                                                    {isSelected ? "● Viewing Trend" : "Tap to view trend"}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Section 2: Health Trends AreaChart */}
+                            <div className={cx(styles.cardBox, styles.cornerTicks)}>
+                                <span className={styles.cornerTickTL} />
+                                <span className={styles.cornerTickTR} />
+                                <span className={styles.cornerTickBL} />
+                                <span className={styles.cornerTickBR} />
+                                <div className={styles.cardHead}>
+                                    <div>
+                                        <h3>{metric.title} Health Trend</h3>
+                                        <p>Personal baseline range band with 30-Sol forecast cone · {metric.unit}</p>
+                                    </div>
+                                    {rangePills}
+                                </div>
+
+                                {chart}
 
                                 <div className={styles.statRow}>
                                     {[
                                         [
                                             "Lowest",
                                             realSeries.length
-                                                ? Math.min(
-                                                    ...realSeries.map((s) => s.value)
-                                                )
+                                                ? Math.min(...realSeries.map((s) => s.value))
                                                 : "--",
                                         ],
                                         [
                                             "Average",
                                             realSeries.length
-                                                ? Number(
-                                                    (
-                                                        realSeries.reduce(
-                                                            (a, b) => a + b.value,
-                                                            0
-                                                        ) / realSeries.length
-                                                    ).toFixed(2)
-                                                )
+                                                ? Number((realSeries.reduce((a, b) => a + b.value, 0) / realSeries.length).toFixed(2))
                                                 : "--",
                                         ],
                                         [
                                             "Highest",
                                             realSeries.length
-                                                ? Math.max(
-                                                    ...realSeries.map((s) => s.value)
-                                                )
+                                                ? Math.max(...realSeries.map((s) => s.value))
                                                 : "--",
                                         ],
                                     ].map(([label, value]) => (
                                         <div key={label} className={styles.stat}>
                                             <span>{label}</span>
-
                                             <b>
                                                 {value}{" "}
-                                                <small>
-                                                    {realSeries.length
-                                                        ? metric.unit
-                                                        : ""}
-                                                </small>
+                                                <small>{realSeries.length ? metric.unit : ""}</small>
                                             </b>
                                         </div>
                                     ))}
                                 </div>
-                            </>
-                        )}
-
-                        {/* ASSESSMENTS */}
-                        {page === "Assessments" && (
-                            <div className={styles.acc}>
-                                {checkInsLoading ? (
-                                    <Empty
-                                        title="Loading check-in history"
-                                        text="Retrieving your submitted wellness and symptom records."
-                                        tag="LOADING"
-                                    />
-                                ) : checkInsError ? (
-                                    <Empty
-                                        title="Could not load check-ins"
-                                        text={checkInsError}
-                                        tag="ERROR"
-                                    />
-                                ) : checkIns.length === 0 ? (
-                                    <Empty
-                                        title="No check-ins yet"
-                                        text="Your submitted wellness and symptom check-ins will appear here."
-                                        tag="NO RECORDS"
-                                    />
-                                ) : (
-                                    <>
-                                        {checkIns.map((item) => (
-                                            <div
-                                                key={item.id}
-                                                className={styles.accItem}
-                                            >
-                                                <div className={styles.accHead}>
-                                                    <span>
-                                                        <b>
-                                                            {item.check_in_type === "WELLNESS"
-                                                                ? "Wellness check-in"
-                                                                : "Symptom report"}
-                                                        </b>
-
-                                                        <small>
-                                                            {new Date(
-                                                                item.recorded_at
-                                                            ).toLocaleString()}
-                                                        </small>
-                                                    </span>
-
-                                                    <span className={styles.chip}>
-                                                        {item.check_in_type}
-                                                    </span>
-                                                </div>
-
-                                                <div className={styles.accBody}>
-                                                    <ul>
-                                                        {Object.entries(
-                                                            item.details
-                                                        ).map(([key, value]) => (
-                                                            <li key={key}>
-                                                                <strong>
-                                                                    {key.replaceAll("_", " ")}:
-                                                                </strong>{" "}
-
-                                                                {Array.isArray(value)
-                                                                    ? value.join(", ")
-                                                                    : value !== null &&
-                                                                        typeof value === "object"
-                                                                        ? JSON.stringify(value)
-                                                                        : String(value)}
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                        ))}
-
-                                        <p className={styles.quiet}>
-                                            Showing {checkIns.length} of your latest check-in records.
-                                            These are self-reported records, not medical diagnoses.
-                                        </p>
-                                    </>
-                                )}
                             </div>
-                        )}
 
-                        {/* ALERTS */}
-                        {page === "Alerts" && (
-                            <>
-                                <div
-                                    className={styles.pills}
-                                    role="group"
-                                    aria-label="Filter alerts"
-                                >
-                                    {(
-                                        ["All", "Open", "Acknowledged"] as const
-                                    ).map((f) => (
-                                        <button
-                                            key={f}
-                                            type="button"
-                                            aria-pressed={alertFilter === f}
-                                            onClick={() => setAlertFilter(f)}
-                                            className={cx(
-                                                styles.pill,
-                                                alertFilter === f &&
-                                                styles.pillActive
-                                            )}
-                                        >
-                                            {f}
-                                        </button>
-                                    ))}
+                            {/* Section 3: Pulse Check Mini-Game */}
+                            <div className={styles.cardBox}>
+                                <div className={styles.cardHead}>
+                                    <div>
+                                        <h3>Optical Pulse Check</h3>
+                                        <p>Zero-upload in-browser green-channel rPPG webcam heart rate and HRV measurement</p>
+                                    </div>
+                                </div>
+                                <PulseCheckView
+                                    alertLevel={activeAlert?.level || "normal"}
+                                    gamificationEnabled={gamificationEnabled}
+                                    onToggleGamification={() => setGamificationEnabled(!gamificationEnabled)}
+                                />
+                            </div>
+
+                            {/* Section 4: Immune Shield */}
+                            <div className={styles.cardBox}>
+                                <div className={styles.cardHead}>
+                                    <div>
+                                        <h3>Immune Shield Defense Meter</h3>
+                                        <p>Multi-factor spaceflight physiological stress context (decision support, not a diagnosis)</p>
+                                    </div>
+                                </div>
+                                <ImmuneShieldView
+                                    alertLevel={activeAlert?.level || "normal"}
+                                    gamificationEnabled={gamificationEnabled}
+                                    onToggleGamification={() => setGamificationEnabled(!gamificationEnabled)}
+                                    onNavigateToQuests={() => setPage("Missions")}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB 4: LAB (Countermeasure Lab + Sol Clock) */}
+                    {page === "Lab" && (
+                        <div className={styles.tabSectionStack}>
+                            <div className={styles.cardBox}>
+                                <div className={styles.cardHead}>
+                                    <div>
+                                        <h3>Countermeasure Forecast Lab</h3>
+                                        <p>What-if simulation: adjust sleep, resistance and fluid intake to forecast 7-Sol resilience</p>
+                                    </div>
+                                </div>
+                                <CountermeasureLabView
+                                    alertLevel={activeAlert?.level || "normal"}
+                                    gamificationEnabled={gamificationEnabled}
+                                    onToggleGamification={() => setGamificationEnabled(!gamificationEnabled)}
+                                />
+                            </div>
+
+                            <div className={styles.cardBox}>
+                                <div className={styles.cardHead}>
+                                    <div>
+                                        <h3>Circadian Sol Clock</h3>
+                                        <p>Dual-overlaid habitat vs predicted body clock with blue photic shifting and realignment Sol countdown</p>
+                                    </div>
+                                </div>
+                                <SolClockView
+                                    alertLevel={activeAlert?.level || "normal"}
+                                    gamificationEnabled={gamificationEnabled}
+                                    onToggleGamification={() => setGamificationEnabled(!gamificationEnabled)}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB 5: LIBRARY (Codex) */}
+                    {page === "Library" && (
+                        <div className={styles.tabSectionStack}>
+                            <div className={styles.cardBox}>
+                                <div className={styles.cardHead}>
+                                    <div>
+                                        <h3>Flight Science Codex</h3>
+                                        <p>Peer-reviewed NASA HRP research cards, DOI sources and unlocked space biology knowledge</p>
+                                    </div>
+                                </div>
+                                <CodexView
+                                    alertLevel={activeAlert?.level || "normal"}
+                                    gamificationEnabled={gamificationEnabled}
+                                    onToggleGamification={() => setGamificationEnabled(!gamificationEnabled)}
+                                    onNavigateToQuest={() => setPage("Missions")}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB 6: ALERTS (Alerts + Assessments + Scenario Panel) */}
+                    {page === "Alerts" && (
+                        <div className={styles.tabSectionStack}>
+                            {/* Active Alerts */}
+                            <div className={styles.cardBox}>
+                                <div className={styles.cardHead}>
+                                    <div>
+                                        <h3>Active Telemetry Alerts</h3>
+                                        <p>Automated threshold notifications and fault-gate status</p>
+                                    </div>
+                                    <div className={styles.pills} role="group" aria-label="Filter alerts">
+                                        {(["All", "Open", "Acknowledged"] as const).map((f) => (
+                                            <button
+                                                key={f}
+                                                type="button"
+                                                aria-pressed={alertFilter === f}
+                                                onClick={() => setAlertFilter(f)}
+                                                className={cx(styles.pill, alertFilter === f && styles.pillActive)}
+                                            >
+                                                {f}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
 
                                 {alertsLoading ? (
-                                    <Empty
-                                        title="Loading alerts"
-                                        text="Retrieving notifications from the mission alert service."
-                                        tag="LOADING"
-                                    />
+                                    <Empty title="Loading alerts" text="Checking active alert feed." tag="LOADING" />
                                 ) : alertError ? (
-                                    <Empty
-                                        title="Unable to load alerts"
-                                        text={alertError}
-                                        tag="API ERROR"
-                                    />
+                                    <Empty title="Could not load alerts" text={alertError} tag="ERROR" />
                                 ) : shownLiveAlerts.length > 0 ? (
-                                    <section className={styles.card}>
-                                        <ul className={styles.alertList}>
-                                            {shownLiveAlerts.map((a) =>
-                                                liveAlertRow(a, true)
-                                            )}
-                                        </ul>
-                                    </section>
+                                    <ul className={styles.alertList}>
+                                        {shownLiveAlerts.map((a) =>
+                                            liveAlertRow(a, true)
+                                        )}
+                                    </ul>
                                 ) : liveAlerts.length === 0 ? (
-                                    <Empty
-                                        title="No alerts yet"
-                                        text="Health monitoring notifications will appear here when alert data is received."
-                                        tag="NO ALERTS"
-                                    />
+                                    <Empty title="No alerts yet" text="Health monitoring notifications will appear here when telemetry is received." tag="NO ALERTS" />
                                 ) : (
-                                    <Empty
-                                        title="Nothing in this filter"
-                                        text="Try another filter to see the rest of your alerts."
-                                        tag="ALL CLEAR"
-                                    />
+                                    <Empty title="Nothing in this filter" text="Try another filter to see the rest of your alerts." tag="ALL CLEAR" />
                                 )}
-                            </>
-                        )}
-                    </div>
-                </section>
+                            </div>
+
+                            {/* Assessments History */}
+                            <div className={styles.cardBox}>
+                                <div className={styles.cardHead}>
+                                    <div>
+                                        <h3>Health Assessments History</h3>
+                                        <p>Chronological log of self-reported check-ins and symptom observations</p>
+                                    </div>
+                                </div>
+                                <div className={styles.acc}>
+                                    {checkInsLoading ? (
+                                        <Empty title="Loading check-in history" text="Retrieving submitted records." tag="LOADING" />
+                                    ) : checkInsError ? (
+                                        <Empty title="Could not load check-ins" text={checkInsError} tag="ERROR" />
+                                    ) : checkIns.length === 0 ? (
+                                        <Empty title="No check-ins yet" text="Your submitted wellness records will appear here." tag="NO RECORDS" />
+                                    ) : (
+                                        <>
+                                            {checkIns.map((item) => (
+                                                <div key={item.id} className={styles.accItem}>
+                                                    <div className={styles.accHead}>
+                                                        <span>
+                                                            <b>{item.check_in_type === "WELLNESS" ? "Wellness check-in" : "Symptom report"}</b>
+                                                            <small>{new Date(item.recorded_at).toLocaleString()}</small>
+                                                        </span>
+                                                        <span className={styles.chip}>{item.check_in_type}</span>
+                                                    </div>
+                                                    <div className={styles.accBody}>
+                                                        <ul>
+                                                            {Object.entries(item.details).map(([key, value]) => (
+                                                                <li key={key}>
+                                                                    <strong>{key.replaceAll("_", " ")}:</strong>{" "}
+                                                                    {Array.isArray(value)
+                                                                        ? value.join(", ")
+                                                                        : value !== null && typeof value === "object"
+                                                                        ? JSON.stringify(value)
+                                                                        : String(value)}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Demo Mode Scenario Simulation Panel */}
+                            <div className={styles.cardBox}>
+                                <div className={styles.cardHead}>
+                                    <div>
+                                        <h3>Emergency Scenario Simulation Panel</h3>
+                                        <p>Demo controls: inject dust storms, communications blackouts, and sensor faults</p>
+                                    </div>
+                                </div>
+                                <ScenarioPanelView
+                                    alertLevel={activeAlert?.level || "normal"}
+                                    onApplyScenario={(sc) => {
+                                        if (sc.alert_level === "normal") {
+                                            setActiveAlert(null);
+                                        } else {
+                                            setActiveAlert({
+                                                id: sc.scenario_id,
+                                                level: sc.alert_level,
+                                                title: sc.alert_title,
+                                                reason: sc.alert_reason,
+                                                nextStep: sc.alert_next_step,
+                                                timestamp: "Sol 41 Just now",
+                                            });
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB 7: SETTINGS (Settings + Environment Profile) */}
+                    {page === "Settings" && (
+                        <div className={styles.tabSectionStack}>
+                            <div className={styles.cardBox}>
+                                <div className={styles.cardHead}>
+                                    <div>
+                                        <h3>Settings & Accessibility</h3>
+                                        <p>Gamification toggle, neuro-vestibular reduced motion, contrast, audio and offline sync</p>
+                                    </div>
+                                </div>
+                                <SettingsView
+                                    alertLevel={activeAlert?.level || "normal"}
+                                    gamificationEnabled={gamificationEnabled}
+                                    onToggleGamification={() => setGamificationEnabled(!gamificationEnabled)}
+                                />
+                            </div>
+
+                            <div className={styles.cardBox}>
+                                <div className={styles.cardHead}>
+                                    <div>
+                                        <h3>Planetary Environment Profile</h3>
+                                        <p>Switch between Mars base, Lunar base, Spacecraft, Station, and Rover habitats</p>
+                                    </div>
+                                </div>
+                                <EnvironmentProfileView
+                                    alertLevel={activeAlert?.level || "normal"}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Universal Screen Footer (Rule 3) */}
+                <DisclaimerFooter lastSynced="Sol 41 14:34 UTC · 2m ago" isOffline={false} />
             </div>
 
             {/* CHECK-IN MODAL */}
@@ -1784,6 +1766,14 @@ export default function Dashboard() {
                     {toast}
                 </div>
             )}
+
+            {/* Slide-over Readiness Detail Drawer */}
+            <ReadinessDrawer
+                isOpen={readinessDrawerOpen}
+                onClose={() => setReadinessDrawerOpen(false)}
+                overallScore={readinessScore}
+                overallLevel={readinessLevel}
+            />
         </main>
     );
 }

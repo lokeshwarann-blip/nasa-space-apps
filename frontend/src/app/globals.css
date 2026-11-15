@@ -1,25 +1,27 @@
 :root {
-  --background: #ffffff;
-  --foreground: #29243b;
+  /* MELIORA Unified Poster Tokens */
+  --bg: #030307;
+  --surface: rgba(6, 8, 14, 0.86);
+  --surface-2: rgba(255, 255, 255, 0.04);
+  --line: rgba(233, 228, 223, 0.16);
+  --text: #ECE8E3;
+  --muted: rgba(236, 232, 227, 0.55);
+  --accent: #FF4D5A;
+  --accent-ink: #030307;
+  --cool: #8FB8E8;
+  --warn: #FFB84D;
 
-  --primary: #7655c9;
-  --primary-hover: #6242b3;
-  --primary-light: #f0ebfa;
-
-  --surface: #ffffff;
-  --surface-soft: #f8f6fc;
-
-  --border: #eae5f2;
-  --muted: #8d879e;
-
-  --success: #329b78;
-  --warning: #d99b42;
-  --danger: #d85e78;
+  /* Aliases for compatibility */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --primary: var(--accent);
+  --border: var(--line);
 }
 
 html {
   min-height: 100%;
-  color-scheme: light;
+  color-scheme: dark;
+  background-color: var(--bg);
 }
 
 html,
@@ -27,14 +29,17 @@ body {
   max-width: 100vw;
   min-height: 100%;
   overflow-x: hidden;
+  background-color: var(--bg);
 }
 
 body {
   display: flex;
   flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: var(--font-geist-sans), Arial, sans-serif;
+  color: var(--text);
+  background-color: var(--bg);
+  font-family: var(--font-mono), monospace;
+  font-size: 13px;
+  line-height: 1.7;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -50,10 +55,18 @@ input,
 textarea,
 select {
   font: inherit;
+  color: inherit;
+}
+
+/* Force recharts and SVG text to inherit font */
+svg text {
+  font-family: var(--font-mono), monospace !important;
 }
 
 button {
   cursor: pointer;
+  background: none;
+  border: none;
 }
 
 a {
@@ -62,6 +75,12 @@ a {
 }
 
 ::selection {
-  background: #ded3f5;
-  color: #39266b;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* Accessible focus ring */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

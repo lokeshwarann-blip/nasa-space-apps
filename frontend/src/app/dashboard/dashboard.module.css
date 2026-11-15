@@ -14,63 +14,68 @@
 }
 
 .dashboard {
-    /* ----- light theme ----- */
-    --page: #E3F0EE;
-    --shell: #FFFFFF;
-    --card: #CFE5E2;
-    --tile: #E8F3F1;
-    --ink: #0E2A2B;
-    --dim: #44605F;
-    --card-ink: #0E2A2B;
-    --card-dim: #355351;
-    --card-accent: #00695C;
-    --line: #A9CBC7;
-    --sep: rgba(14, 42, 43, 0.14);
-    --hover: rgba(14, 42, 43, 0.07);
-    --brand: #007474;
-    --brand-deep: #00595A;
-    --brand-soft: #0B7F7A;
-    --dark: #0B4344;
-    --on-dark: #FFFFFF;
-    --control-bg: #D5EBE8;
-    --control-ink: #00595A;
-    --ok: #1E6B3A;
-    --ok-bg: #DCF0E1;
-    --warn: #7A4E06;
-    --warn-bg: #F8E7C2;
-    --crit: #A8322B;
-    --crit-bg: #F8D9D5;
-    --focus: #00857C;
-    --shadow: 0 2px 8px rgba(6, 50, 50, 0.06), 0 10px 28px rgba(6, 50, 50, 0.1);
+    /* ----- MELIORA UNIFIED POSTER DESIGN SYSTEM TOKENS ----- */
+    --bg: #030307;
+    --surface: rgba(6, 8, 14, 0.86);
+    --surface-2: rgba(255, 255, 255, 0.04);
+    --line: rgba(233, 228, 223, 0.16);
+    --text: #ECE8E3;
+    --muted: rgba(236, 232, 227, 0.55);
+    --accent: #FF4D5A;
+    --accent-ink: #030307;
+    --cool: #8FB8E8;
+    --warn: #FFB84D;
+
+    /* Theme bindings (Dark deep space is the only theme) */
+    --page: var(--bg);
+    --shell: transparent;
+    --card: var(--surface);
+    --tile: var(--surface-2);
+    --ink: var(--text);
+    --dim: var(--muted);
+    --card-ink: var(--text);
+    --card-dim: var(--muted);
+    --card-accent: var(--accent);
+    --sep: var(--line);
+    --hover: rgba(255, 255, 255, 0.06);
+    --brand: var(--accent);
+    --brand-deep: #b31d28;
+    --brand-soft: #ff707b;
+    --dark: #030307;
+    --on-dark: #ECE8E3;
+    --control-bg: var(--surface-2);
+    --control-ink: var(--text);
+    --ok: var(--cool);
+    --ok-bg: rgba(143, 184, 232, 0.12);
+    --warn-bg: rgba(255, 184, 77, 0.12);
+    --crit: var(--accent);
+    --crit-bg: rgba(255, 77, 90, 0.14);
+    --focus: var(--accent);
+    --shadow: none;
 
     width: 100%;
     min-width: 0;
     min-height: 100vh;
     overflow-x: clip;
-    padding: clamp(10px, 2.5vw, 36px);
-    background: var(--page);
-    color: var(--ink);
-    font-family: var(--font-ui), "Segoe UI", system-ui, sans-serif;
-    font-size: 15px;
-    line-height: 1.5;
+    padding: 0;
+    background: transparent;
+    color: var(--text);
+    font-family: var(--font-mono), monospace;
+    font-size: 13px;
+    line-height: 1.7;
     transition: background 0.25s ease, color 0.25s ease;
 }
 
 .dashboard[data-theme="dark"] {
-    --page: #061C1D;
-    --shell: #0B2A2B;
-    --card: #D3E8E5;
-    --tile: #E6F2F0;
-    --ink: #EAF6F5;
-    --dim: #A9C9C7;
-    --sep: rgba(255, 255, 255, 0.14);
-    --hover: rgba(255, 255, 255, 0.09);
-    --brand: #00807A;
-    --brand-soft: #006B67;
-    --dark: #0F4B4C;
-    --control-bg: #0F4B4C;
-    --control-ink: #D5F3F0;
-    --shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    --card: var(--surface);
+    --tile: var(--surface-2);
+    --ink: var(--text);
+    --dim: var(--muted);
+    --card-ink: var(--text);
+    --card-dim: var(--muted);
+    --card-accent: var(--accent);
+    --line: rgba(233, 228, 223, 0.16);
+    --shadow: none;
 }
 
 .dashboard button,
@@ -94,17 +99,19 @@
 /* ---------- SHELL ---------- */
 
 .shell {
+    position: relative;
+    z-index: 1;
     width: 100%;
-    max-width: 1360px;
+    max-width: 1600px;
     min-width: 0;
     margin: 0 auto;
-    padding: 26px;
+    padding: clamp(16px, 2.5vw, 36px);
     display: grid;
-    grid-template-columns: 232px minmax(0, 1fr);
-    gap: 30px;
-    background: var(--shell);
-    border-radius: 24px;
-    box-shadow: var(--shadow);
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 32px;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
     transition: background 0.25s ease;
 }
 
@@ -172,6 +179,7 @@
     background: var(--control-bg);
     color: var(--control-ink);
     box-shadow: inset 3px 0 0 var(--brand);
+    border-radius: 12px;
     transform: none;
 }
 
@@ -446,7 +454,7 @@
     font-size: 14.5px;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 8px 20px rgba(0, 90, 90, 0.3);
+    box-shadow: 0 8px 24px rgba(211, 18, 31, 0.35);
     transition: transform 0.2s ease, filter 0.2s ease;
 }
 
@@ -699,20 +707,23 @@
 }
 
 .tip {
-    padding: 9px 13px;
+    padding: 8px 12px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    border-radius: 12px;
-    background: var(--dark);
-    color: #FFFFFF;
-    font-size: 13px;
+    gap: 4px;
+    border-radius: 2px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: var(--font-mono), monospace;
+    font-size: 11px;
 }
 
 .tip b {
-    font-family: var(--font-num), sans-serif;
+    font-family: var(--font-display), sans-serif;
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 700;
+    color: var(--accent);
 }
 
 /* ---------- GAUGE ---------- */
@@ -1508,5 +1519,575 @@
     .alertItem,
     .logout {
         transition: none;
+    }
+}
+
+/* =========================================
+   MELIORA CREW DASHBOARD POSTER DESIGN SYSTEM
+   ========================================= */
+
+.crewShell {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 1560px;
+    margin: 0 auto;
+    padding: 0 clamp(16px, 2.5vw, 36px) 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* ---------- HORIZONTAL TOP BAR ---------- */
+
+.crewTopBar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    width: 100%;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    padding: 10px clamp(16px, 2.5vw, 36px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.crewTopBarRow1 {
+    display: contents;
+}
+
+.crewTopBarLeft {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.crewBrandLogo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--text);
+}
+
+.crewBrandLogo h2 {
+    margin: 0;
+    font-family: var(--font-display), sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    color: var(--text);
+}
+
+/* Center Tabs: coral underline only, tab label in coral when active */
+.crewTabsContainer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 2px 4px;
+    max-width: 100%;
+}
+
+.crewTabsContainer::-webkit-scrollbar {
+    display: none;
+}
+
+.crewTab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 0;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-mono), monospace;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    white-space: nowrap;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.15s ease;
+    outline: none;
+}
+
+.crewTab:hover {
+    color: var(--text);
+}
+
+.crewTab:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.crewTabActive {
+    color: var(--accent) !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.crewTabActive::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent);
+}
+
+.crewTabBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 2px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-family: var(--font-mono), monospace;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* Right Actions */
+.crewTopActions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.crewClock {
+    font-family: var(--font-mono), monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border-radius: 2px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    white-space: nowrap;
+}
+
+.avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 2px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: var(--font-mono), monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.crewLogoutBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 2px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-mono), monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.crewLogoutBtn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* ---------- PAGE HEADING & MOONLIGHT STACKED H1 ---------- */
+
+.crewPageHeading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 24px 0 12px;
+    width: 100%;
+}
+
+.stackedH1Container {
+    position: relative;
+    display: inline-block;
+    padding-bottom: 8px;
+}
+
+.echoH1_1 {
+    position: absolute;
+    top: 8px;
+    left: 0;
+    font-family: var(--font-display), sans-serif;
+    font-size: clamp(36px, 6vw, 84px);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    line-height: 0.95;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--line);
+    opacity: 0.25;
+    pointer-events: none;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.echoH1_2 {
+    position: absolute;
+    top: 16px;
+    left: 0;
+    font-family: var(--font-display), sans-serif;
+    font-size: clamp(36px, 6vw, 84px);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    line-height: 0.95;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--line);
+    opacity: 0.10;
+    pointer-events: none;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.frontH1 {
+    position: relative;
+    font-family: var(--font-display), sans-serif;
+    font-size: clamp(36px, 6vw, 84px);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    line-height: 0.95;
+    color: var(--text);
+    margin: 0;
+    white-space: nowrap;
+}
+
+.scriptAccent {
+    font-family: var(--font-script), cursive;
+    color: var(--accent);
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 1.18em;
+    display: inline-block;
+    vertical-align: baseline;
+    margin-left: 0.2em;
+}
+
+.crewPageHeading p {
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-family: var(--font-mono), monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    max-width: 640px;
+}
+
+/* Section labels above cards */
+.sectionLabel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-mono), monospace;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    margin-bottom: 8px;
+}
+
+.sectionLabelRule {
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+}
+
+/* Primary CTA button: solid coral with near-black text, 2px radius, uppercase mono 12px */
+.cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 2px;
+    border: none;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-family: var(--font-mono), monospace;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+    white-space: nowrap;
+}
+
+.cta:hover {
+    opacity: 0.9;
+}
+
+/* ---------- OVERVIEW LAYOUT (5fr / 6fr on Desktop, 1fr below 960px) ---------- */
+
+.overviewGrid {
+    display: grid;
+    grid-template-columns: 5fr 6fr;
+    gap: 24px;
+    align-items: start;
+    width: 100%;
+}
+
+.overviewLeft {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+}
+
+.overviewRight {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+}
+
+/* ---------- CARD BOXES & WIREFRAME TICKS ---------- */
+
+.cardBox {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    box-shadow: none;
+    min-width: 0;
+    width: 100%;
+}
+
+.cornerTickTL {
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid var(--line);
+    border-left: 2px solid var(--line);
+    pointer-events: none;
+}
+
+.cornerTickTR {
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid var(--line);
+    border-right: 2px solid var(--line);
+    pointer-events: none;
+}
+
+.cornerTickBL {
+    position: absolute;
+    bottom: -1px;
+    left: -1px;
+    width: 8px;
+    height: 8px;
+    border-bottom: 2px solid var(--line);
+    border-left: 2px solid var(--line);
+    pointer-events: none;
+}
+
+.cornerTickBR {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 8px;
+    height: 8px;
+    border-bottom: 2px solid var(--line);
+    border-right: 2px solid var(--line);
+    pointer-events: none;
+}
+
+.cardHead {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.cardHead h3 {
+    margin: 0;
+    font-family: var(--font-display), sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    color: var(--text);
+}
+
+.cardHead p {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-family: var(--font-mono), monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    line-height: 1.4;
+}
+
+/* Stack of sections in merged tabs */
+.tabSectionStack {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+}
+
+/* Selectable Vital Cards */
+.vitalCardSelectable {
+    padding: 16px 20px;
+    border-radius: 2px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+    outline: none;
+}
+
+.vitalCardSelectable:hover {
+    border-color: var(--accent);
+}
+
+.vitalCardSelectable:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.vitalCardSelected {
+    border-color: var(--accent) !important;
+    background: var(--surface-2) !important;
+}
+
+/* Chart container box with corner ticks */
+.chartBox {
+    position: relative;
+    width: 100%;
+    height: 280px;
+    min-height: 280px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 16px 12px 8px;
+}
+
+/* Time range pills */
+.pills {
+    display: inline-flex;
+    gap: 4px;
+}
+
+.pill {
+    padding: 4px 10px;
+    border-radius: 2px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-mono), monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.pill:hover {
+    color: var(--text);
+    border-color: var(--text);
+}
+
+.pillActive {
+    background: var(--accent) !important;
+    color: var(--accent-ink) !important;
+    border-color: var(--accent) !important;
+    font-weight: 600;
+}
+
+/* ---------- RESPONSIVE RULES (<960px) ---------- */
+
+@media (max-width: 960px) {
+    .crewTopBar {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 10px 16px;
+        gap: 10px;
+    }
+
+    .crewTopBarRow1 {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .crewTabsContainer {
+        width: 100%;
+        overflow-x: auto;
+        padding: 4px 2px 6px;
+    }
+
+    .overviewGrid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .crewShell {
+        padding: 0 16px 32px;
+        gap: 20px;
+    }
+
+    .stackedH1Container {
+        white-space: normal;
+    }
+
+    .echoH1_1, .echoH1_2 {
+        display: none;
     }
 }

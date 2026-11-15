@@ -85,3 +85,6 @@ pmdata/
 test/health_readings_scenario.json
 credentials.json
 *.secret
+*.zip
+frontend_code_for_claude.md
+frontend/.stitch/

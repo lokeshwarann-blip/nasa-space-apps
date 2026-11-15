@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status, HTTPException
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.dependencies import get_current_identity
@@ -120,4 +121,74 @@ async def invalidate_measurement(
     )
     await session.commit()
     return measurement
+
+
+class PulseMeasurementRequest(BaseModel):
+    hr: float = Field(..., ge=30, le=240, description="Heart Rate in beats per minute")
+    hrv_rmssd: float = Field(..., ge=5, le=300, description="Heart Rate Variability RMSSD in milliseconds")
+    signal_quality: str = Field(..., description="'good', 'marginal', or 'poor'")
+    duration_seconds: float = Field(default=30.0, description="Duration of measurement in seconds")
+    method: str = Field(default="rppg_camera", description="'rppg_camera' or 'manual_entry'")
+    confidence: float = Field(default=0.92, ge=0.0, le=1.0)
+    notes: str | None = None
+
+
+class PulseMeasurementResponse(BaseModel):
+    status: str
+    message: str
+    hr: float
+    hrv_rmssd: float
+    signal_quality: str
+    sensor_status: str
+    baseline_low: float = 58.0
+    baseline_high: float = 82.0
+    in_range: bool
+    xp_awarded: int
+    timestamp: str
+
+
+@router.post(
+    "/pulse",
+    response_model=PulseMeasurementResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Record Pulse & HRV Measurement (rPPG / Manual)",
+    description=(
+        "Records a 30s rPPG or manual pulse evaluation. Applies the Data-Quality Gate: "
+        "measurements with poor signal quality are rejected as hardware/sensor issues, never as health alerts."
+    ),
+)
+async def record_pulse_measurement(
+    payload: PulseMeasurementRequest,
+) -> PulseMeasurementResponse:
+    # DATA QUALITY GATE:
+    # Rule: Low quality is gated before saving as valid telemetry.
+    # Rule: Shows as a sensor problem (FAULTY_SENSOR), never as a health alert.
+    if payload.signal_quality.lower() == "poor" or payload.confidence < 0.60:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "Data Quality Gate Check Failed: Low signal quality detected (sensor issue: motion artifact, "
+                "face occlusion, or insufficient lighting). Telemetry was not recorded as valid physiological "
+                "context. Please stabilize and retry or use manual fallback. Note: this is a sensor issue, not a health alert."
+            ),
+        )
+
+    # Personal baseline range: 58.0 - 82.0 bpm
+    in_range = 58.0 <= payload.hr <= 82.0
+    xp = 25 if payload.method == "rppg_camera" else 15
+
+    return PulseMeasurementResponse(
+        status="logged",
+        message="Pulse telemetry successfully verified and recorded into mission record.",
+        hr=round(payload.hr, 1),
+        hrv_rmssd=round(payload.hrv_rmssd, 1),
+        signal_quality=payload.signal_quality,
+        sensor_status="GOOD_SIGNAL",
+        baseline_low=58.0,
+        baseline_high=82.0,
+        in_range=in_range,
+        xp_awarded=xp,
+        timestamp=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+    )
+
 

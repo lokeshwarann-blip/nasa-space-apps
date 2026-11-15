@@ -1,0 +1,65 @@
+Title: Animated Human Body with circulatory system
+URL: http://sketchfab.com/3d-models/animated-human-body-with-circulatory-system-6a7a537a71444f6e8201e18a685a013d
+Author: https://sketchfab.com/AVRcontent
+
+Vertices: 135305
+Polygons: 270691
+Animations: 1
+
+Download Date: 15-11-2026
+Download Format: GLTF
+Download Path: C:\Users\LOKESHWARAN\Downloads\3d_Ripper_Pro_v110b\Downloads\AVRcontent\01- Animated.Human.Body.with.circulatory.system\
+Download File: 6a7a537a71444f6e8201e18a685a013d_Textured.gltf
+
+Textures: 51
+#1: 00d2e1a94d7d4378a2bc2fb69229b8c0_R_lungs_LP_roughness.jpeg
+#2: 01634a9684c5438ba6bb2f4cca5c7555_R_Brain_Roughness.jpeg
+#3: 04f55262c68b403d84ba61c0228067ac_RGB_Pelvis_Albedo.jpeg
+#4: 0512ce3aee534d35b7d281e08f57d59f_RGB_Spine_Albedo.jpeg
+#5: 091caa9937984d6580136818bd4822d2_RGB_Legs_Albedo.jpeg
+#6: 0e7ac7011ed5405d997b10e41381f4f7_N_Pelvis_Normal_DirectX.jpeg
+#7: 1430eb16c23449c4825c8a0ac96ef17b_R_CirculatorySystem_roughness.jpeg
+#8: 18bb5453b44046de8a9ea54feeba8132_N_Galbladder_Mat_Normal_DirectX.jpeg
+#9: 1b461986416d42e8840275d60432dab6_N_Legs_Normal_DirectX.jpeg
+#10: 1c66478b638d44209f2b167c2cfebdb9_N_Ribcage_Normal_DirectX.jpeg
+#11: 1e8e7bcb1f8e4f9b8b6af122d623e95d_N_Hands_Normal_DirectX.jpeg
+#12: 31de663c6b8b46329416e8ee82fa30e6_R_eye_Roughness.jpeg
+#13: 35431b1e03464831a0038c802595bc75_RGB_CirculatorySystem_albedo.jpeg
+#14: 40137512e1924a0499d47c28f86ce0a3_R_Hands_Roughness.jpeg
+#15: 40924630c6e74f078f6c55c672254469_N_Spine_Normal_DirectX.jpeg
+#16: 4104dbb997e549848b00d00e856b7faf_RGB_Hands_Albedo.jpeg
+#17: 412ae0d7cf284a748fdb1ef8da8bbf36_N_eye_Normal_DirectX.jpeg
+#18: 426034d42dd0445d985a251f04f2bcc8_RGB_DigestiveSystem_Albedo.jpeg
+#19: 4bbd9a37d7ae4da5904a438d168d18a4_N_Urinary_System_Normal_DirectX.jpeg
+#20: 5ba8196910ce489291b14e027fd28dac_R_Diafragma_Roughness.jpeg
+#21: 5bf0dfc16e994dd5939405efa625347e_N_Skull_Normal_DirectX.jpeg
+#22: 6cb53a3bae5e4116ac186c4f2e1e9369_R_Ribcage_Roughness.jpeg
+#23: 7ba0cd5e63ee4ce58b8b420f7c48ec6a_RGB_Liver_Mat_Albedo.jpeg
+#24: 7e887af46d9044d0a97f46f866d66445_R_Skull_Roughness.jpeg
+#25: 8397e5388673444198496022f5ba7bc4_N_lungs_LP_normal.jpeg
+#26: 8c82054d0d4e4b7aacb99ef8b475f7f2_RGB_Urinary_System_Albedo.jpeg
+#27: 8f7c17d0692246d88b478ee254d93325_R_Heart_Roughness.jpeg
+#28: 92eb60e3c6aa4782b04e0d08016112b6_R_Urinary_System_Metallic.jpeg
+#29: 94f3190113554cb19115c7930690a80d_RGB_lungs_LP_albedo.jpeg
+#30: 99349011d37d4da291f6703c63aab385_RGB_Diafragma_Albedo.jpeg
+#31: 9ba07b68aa1f458f8cf0704e59c9949e_N_Heart_Normal_DirectX.jpeg
+#32: a06f4e8834ce466ea22915228dfa0cad_R_Urinary_System_Roughness.jpeg
+#33: ac280377086446dcacf2240a39d8bcfb_R_Galbladder_Mat_Roughness.jpeg
+#34: bcb31397be0440538928d22df86861c8_N_CirculatorySystem_normal.png
+#35: bce96b3b5f1941fea09c7dec0a151d58_N_Brain_Normal_DirectX.jpeg
+#36: be0e1c4f0f31442fbe4f11004c229ab1_R_eye_Opacity.jpeg
+#37: bf14ec53dff948fc816afbb88f553444_N_Diafragma_Normal_DirectX.jpeg
+#38: bf29ba94d38f4be8bd757e328648f7c1_R_Spine_Roughness.jpeg
+#39: d0167a81cd5443c5aa5fa0527a33e0b2_R_DigestiveSystem_Roughness.jpeg
+#40: d02e497c80f64b5a91a85f2f3f95f233_RGB_eye_Albedo.jpeg
+#41: d25fd61b17244ae5a417541f73b572a4_R_Legs_Roughness.jpeg
+#42: d53fb9f3cb554e1ba0f8a032e9d24233_R_CirculatorySystem_metallic.jpeg
+#43: d83917041f604ee58fcb2d1c5cb6e59a_R_Pelvis_Roughness.jpeg
+#44: da43a65443eb47738c18097a1af42062_RGB_Ribcage_Albedo.jpeg
+#45: ddfce8f455c542bfb9c28ac7ca3c96ec_RGB_Skull_Albedo.jpeg
+#46: e161f294b81049a5962a30cb2ee892af_RGB_Galbladder_Mat_AlbedoTransparency.jpeg
+#47: e2e1684a93484dd7b54fd74273cd7085_RGB_Brain_Albedo.jpeg
+#48: e5d186526a644c83960b9fe3b429cee7_N_DigestiveSystem_Normal_DirectX.jpeg
+#49: e7272938a32e4c669569a791308486c0_RGB_Heart_Albedo.jpeg
+#50: f6b2b134609c4d84ad01dadedba8293a_N_Liver_Mat_Normal_DirectX.jpeg
+#51: f70096b3d6234e1285d83e05f163b8df_R_Brain_Metallic.jpeg

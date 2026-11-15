@@ -1,8 +1,18 @@
+import sys
+from pathlib import Path
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Ensure project root and backend are in sys.path
+_ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+if str(_ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(_ROOT_DIR))
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+if str(_BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_DIR))
 
 from src.api.middleware import RequestCorrelationMiddleware, RequestSizeLimitMiddleware
 from src.api.router import api_v1_router, root_health_router
@@ -25,6 +35,25 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         f"Starting {settings.PROJECT_NAME} v{settings.VERSION} "
         f"[env: {settings.ENVIRONMENT}]"
     )
+
+    # Initialize tables and seed development users if in development environment
+    if settings.ENVIRONMENT in ("development", "staging"):
+        try:
+            from src.core.database import get_engine, get_session_factory
+            from src.models.base import Base
+            import src.models  # load models
+            from src.core.seed import seed_dev_data
+
+            engine = get_engine()
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+
+            session_factory = get_session_factory()
+            async with session_factory() as session:
+                await seed_dev_data(session)
+            logger.info("Local development database initialized and seeded.")
+        except Exception as e:
+            logger.warning(f"Database auto-initialization note: {e}")
 
     yield
 
