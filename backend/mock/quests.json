@@ -1,0 +1,55 @@
+{
+  "disclaimer": "Simulated data, decision support, not a medical device.",
+  "quests": [
+    {
+      "id": "quest-resistive",
+      "title": "Resistive Exercise Session",
+      "target": 45.0,
+      "unit": "minutes",
+      "period": "daily",
+      "rationale": "Maintains musculoskeletal integrity and mitigates bone mineral density loss trends in microgravity.",
+      "source": "NASA Human Research Program (HRP-47065)",
+      "evidence_level": "established"
+    },
+    {
+      "id": "quest-aerobic",
+      "title": "Aerobic Conditioning",
+      "target": 30.0,
+      "unit": "minutes",
+      "period": "daily",
+      "rationale": "Sustains VO2 peak and cardiovascular regulation under cephalad fluid shift context.",
+      "source": "NASA HRP Cardiovascular Standards",
+      "evidence_level": "established"
+    },
+    {
+      "id": "quest-circadian-light",
+      "title": "Circadian Light Regulation",
+      "target": 30.0,
+      "unit": "minutes",
+      "period": "daily",
+      "rationale": "Synchronizes suprachiasmatic nucleus circadian timing through calibrated blue-enriched spectrum exposure.",
+      "source": "NASA Behavioral Health and Performance Division",
+      "evidence_level": "established"
+    },
+    {
+      "id": "quest-hydration",
+      "title": "Hydration Optimization Protocol",
+      "target": 2.5,
+      "unit": "liters",
+      "period": "daily",
+      "rationale": "Supports intravascular volume regulation counteracting microgravity fluid shift trends.",
+      "source": "NASA Space Physiology Guidelines",
+      "evidence_level": "established"
+    },
+    {
+      "id": "quest-sleep-hygiene",
+      "title": "Rest & Immune Surveillance Window",
+      "target": 8.0,
+      "unit": "hours",
+      "period": "daily",
+      "rationale": "Restorative rest supports immune regulation and viral latency control; check with flight surgeon for individualized context.",
+      "source": "NASA Exploration Medical Integrated Product Team",
+      "evidence_level": "emerging"
+    }
+  ]
+}

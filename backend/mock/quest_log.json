@@ -1,0 +1,11 @@
+{
+  "disclaimer": "Simulated data, decision support, not a medical device.",
+  "quest_id": "quest-resistive",
+  "event_id": "evt-resistive-001",
+  "xp_gained": 50,
+  "progress": 1.0,
+  "unlocked": [
+    "badge_circadian_alignment",
+    "bonus_rest_window"
+  ]
+}

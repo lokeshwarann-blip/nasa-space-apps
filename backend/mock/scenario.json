@@ -1,0 +1,14 @@
+{
+  "disclaimer": "Simulated data, decision support, not a medical device.",
+  "active_scenario": "coordinated_drift",
+  "message": "Coordinated multi-signal physiological drift simulation active. Monitoring cross-system trend shifts.",
+  "started_at": "2026-11-15T15:19:50.972204+00:00",
+  "parameters": {
+    "drift_rate_sd_per_day": 0.25,
+    "affected_signals": [
+      "heart_rate",
+      "spo2",
+      "sleep_duration"
+    ]
+  }
+}
