@@ -1,4 +1,4 @@
 layer,total_events,rate_per_fortnight
-Raw Alerts Emitted (No Cooldown),3,0.06
-Deduplicated Alerts (With 3-day Cooldown),1,0.02
-Bundled Clinical Incidents (Incident Grouping),3,0.06
+Raw Alerts Emitted (No Cooldown),6,0.12
+Deduplicated Alerts (With 3-day Cooldown),3,0.06
+Bundled Clinical Incidents (Incident Grouping),6,0.12

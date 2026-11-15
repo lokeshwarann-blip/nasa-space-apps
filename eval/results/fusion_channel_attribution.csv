@@ -1,14 +1,14 @@
 scenario,total_alerts_or_detections,primary_cusum_only,secondary_mewma_only,both_channels,primary_share_pct,secondary_share_pct
-Nominal Null,4,2,2,0,50.0,50.0
-Single 0.5 SD (HR),86,0,86,0,0.0,100.0
+Nominal Null,7,5,2,0,71.4,28.6
+Single 0.5 SD (HR),86,1,83,2,3.5,98.8
 Single 1.0 SD (HR),197,0,195,2,1.0,100.0
-Single 2.0 SD (HR),200,0,197,3,1.5,100.0
+Single 2.0 SD (HR),200,0,192,8,4.0,100.0
 Multi 0.5 SD (4 Vitals),200,0,200,0,0.0,100.0
 Multi 0.8 SD (4 Vitals),200,0,200,0,0.0,100.0
 Multi 1.0 SD (4 Vitals),200,0,200,0,0.0,100.0
 Multi 2.0 SD (4 Vitals),200,0,200,0,0.0,100.0
-Ramp 1.5 SD (HR),200,0,197,3,1.5,100.0
-Misspecified Null: t(3) tails,20,5,15,0,25.0,75.0
-Misspecified Null: Circadian,4,2,2,0,50.0,50.0
-Misspecified Null: 25% Dropout,3,0,3,0,0.0,100.0
-Misspecified Null: Combined,25,6,17,2,32.0,76.0
+Ramp 1.5 SD (HR),200,0,195,5,2.5,100.0
+Misspecified Null: t(3) tails,25,10,15,0,40.0,60.0
+Misspecified Null: Circadian,7,5,2,0,71.4,28.6
+Misspecified Null: 25% Dropout,4,1,3,0,25.0,75.0
+Misspecified Null: Combined,31,12,17,2,45.2,61.3
