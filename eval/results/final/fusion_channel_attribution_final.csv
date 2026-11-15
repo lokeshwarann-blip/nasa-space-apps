@@ -1,0 +1,10 @@
+scenario,total_alerts_or_detections,primary_cusum_only,secondary_mewma_only,both_channels,primary_share_pct,secondary_share_pct
+Nominal Null,7,3,4,0,42.9,57.1
+Single 0.5 SD (HR),35,7,28,0,20.0,80.0
+Single 1.0 SD (HR),155,44,83,28,46.5,71.6
+Single 2.0 SD (HR),200,21,132,47,34.0,89.5
+Multi 0.5 SD (4 Vitals),139,4,132,3,5.0,97.1
+Multi 0.8 SD (4 Vitals),198,0,197,1,0.5,100.0
+Multi 1.0 SD (4 Vitals),200,0,198,2,1.0,100.0
+Multi 2.0 SD (4 Vitals),200,0,200,0,0.0,100.0
+Ramp 1.5 SD (HR),177,36,85,56,52.0,79.7
