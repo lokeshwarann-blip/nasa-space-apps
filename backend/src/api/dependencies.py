@@ -40,24 +40,27 @@ async def get_current_identity(
         result = await session.execute(query)
         user = result.scalar_one_or_none()
 
-        if user is None or not user.is_active:
-            raise AppException(
-                message="Account is inactive or no longer exists.",
-                code="unauthorized",
-                status_code=status.HTTP_401_UNAUTHORIZED,
+        if user is not None:
+            if not user.is_active:
+                raise AppException(
+                    message="Account is inactive or no longer exists.",
+                    code="unauthorized",
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            return AuthenticatedIdentity(
+                user_id=str(user.id),
+                username=user.username,
+                role=user.role,
+                crew_member_id=(
+                    str(user.crew_member_id) if user.crew_member_id else None
+                ),
+                assigned_crew_ids=[
+                    str(cid) for cid in (user.assigned_crew_ids or [])
+                ],
             )
 
-        return AuthenticatedIdentity(
-            user_id=str(user.id),
-            username=user.username,
-            role=user.role,
-            crew_member_id=(
-                str(user.crew_member_id) if user.crew_member_id else None
-            ),
-            assigned_crew_ids=[
-                str(cid) for cid in (user.assigned_crew_ids or [])
-            ],
-        )
+        return identity
 
     except TokenExpiredError as exc:
         raise AppException(

@@ -1,68 +1,37 @@
-from fastapi import APIRouter, status
+import json
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.core.database import get_db
+from src.models.quests import Unlock
 from src.schemas.astronaut import (
     EvidenceLevelEnum,
     ScienceContextCard,
     ScienceContextResponse,
 )
 
-router = APIRouter(prefix="/science-context", tags=["Science Context Mock"])
+router = APIRouter(prefix="/science-context", tags=["Science Context"])
 
-MOCK_CARDS = [
-    ScienceContextCard(
-        id="sc-tregs",
-        title="Regulatory T-Cell (Treg) Modulation in Spaceflight",
-        plain_summary="Observational spaceflight studies report alterations in regulatory T-cell proportions and suppressor activity during orbital missions.",
-        why_it_matters="Altered immune cell distribution shifts adaptive immune response context in microgravity. Check with flight surgeon for surveillance context.",
-        evidence_level=EvidenceLevelEnum.EMERGING,
-        sources=["Crucian et al., J. Leukocyte Biology", "NASA Twins Study (Science, 2019)"],
-        linked_signals=["treg_ratio", "immune_activation", "cytokine_profile"],
-    ),
-    ScienceContextCard(
-        id="sc-latent-virus",
-        title="Latent Virus Reactivation Surveillance",
-        plain_summary="Subclinical shedding of latent herpesviruses (EBV, VZV, CMV) has been documented in astronauts during spaceflight due to physical and microgravity stressors.",
-        why_it_matters="Tracking shedding biomarker trends provides objective context for cellular immune status without indicating clinical status. Check with flight surgeon.",
-        evidence_level=EvidenceLevelEnum.ESTABLISHED,
-        sources=["Rooney et al., Frontiers in Microbiology", "NASA HRP Spaceflight Immunology"],
-        linked_signals=["viral_load_ebv", "viral_load_vzv", "salivary_biomarkers"],
-    ),
-    ScienceContextCard(
-        id="sc-circadian-light",
-        title="Circadian Light Phase Regulation",
-        plain_summary="Dynamic solid-state lighting schedules modulate spectral irradiance and illuminance aboard spacecraft to synchronize human circadian clocks.",
-        why_it_matters="Maintains circadian phase alignment, cognitive operational readiness, and nocturnal sleep quality across orbital mission cycles.",
-        evidence_level=EvidenceLevelEnum.ESTABLISHED,
-        sources=["Brainard et al., Lighting Research & Technology", "NASA HRP BHP Sleep Standards"],
-        linked_signals=["circadian_phase_offset", "light_lux", "blue_spectrum_irradiance", "sleep_duration"],
-    ),
-    ScienceContextCard(
-        id="sc-radiation",
-        title="Galactic Cosmic Rays & Solar Particle Event Dosimetry",
-        plain_summary="Beyond low Earth orbit, crew members encounter ionizing cosmic rays and intermittent solar particle events requiring cumulative dosimetry.",
-        why_it_matters="Dosimetric trend tracking provides critical environmental context to optimize active vehicle shielding and EVA scheduling under ALARA principles.",
-        evidence_level=EvidenceLevelEnum.ESTABLISHED,
-        sources=["Cucinotta et al., Radiation Research", "NASA Space Radiation Program Element"],
-        linked_signals=["radiation_dose_rate", "cumulative_absorbed_dose", "flux_rate"],
-    ),
-    ScienceContextCard(
-        id="sc-fluid-shift",
-        title="Cephalad Fluid Redistribution",
-        plain_summary="In microgravity, the absence of hydrostatic pressure gradients causes approximately two liters of body fluid to shift toward the chest and head.",
-        why_it_matters="Induces central venous engorgement and physiological remodeling trends. Monitoring baseline shift guides countermeasure fluid-loading protocols.",
-        evidence_level=EvidenceLevelEnum.ESTABLISHED,
-        sources=["Hargens & Richardson, J. Applied Physiology", "NASA SANS Research Group"],
-        linked_signals=["blood_pressure_systolic", "blood_pressure_diastolic", "jugular_vein_cross_section", "intraocular_pressure"],
-    ),
-    ScienceContextCard(
-        id="sc-sleep",
-        title="Sleep Architecture & Behavioral Rhythmicity",
-        plain_summary="Microgravity, altered sleep berths, and mission operations frequently fragment restorative slow-wave and REM sleep architecture.",
-        why_it_matters="Restorative sleep trends directly underpin neurobehavioral readiness, executive decision capability, and physical resilience on long-duration exploration.",
-        evidence_level=EvidenceLevelEnum.ESTABLISHED,
-        sources=["Basner et al., Sleep", "NASA Behavioral Health and Performance Division"],
-        linked_signals=["sleep_duration", "rem_percentage", "sleep_efficiency", "fatigue"],
-    ),
-]
+# Load cards from JSON at module startup
+_CARDS_PATH = Path(__file__).resolve().parents[2] / "data" / "science_cards.json"
+
+with open(_CARDS_PATH, "r", encoding="utf-8") as _f:
+    _RAW_CARDS: list[dict] = json.load(_f)
+
+# Map quest IDs to science card IDs for unlock triggers
+QUEST_TO_CARD: dict[str, str] = {
+    "quest-resistive": "sc-fluid-shift",
+    "quest-aerobic": "sc-sleep",
+    "quest-circadian-light": "sc-circadian-light",
+    "quest-hydration": "sc-radiation",
+    "quest-rest-routine": "sc-latent-virus",
+}
+
+# Tregs unlocks after any 3 quests logged (special condition)
+TREGS_CARD_ID = "sc-tregs"
 
 
 @router.get(
@@ -70,8 +39,30 @@ MOCK_CARDS = [
     response_model=ScienceContextResponse,
     status_code=status.HTTP_200_OK,
     summary="Get Scientific Context Cards",
-    description="Returns physiological mechanisms, educational background, and linked signals for decision support.",
+    description="Returns science context cards with unlock state driven by quest logging.",
 )
-async def get_science_context() -> ScienceContextResponse:
-    """Mock endpoint returning science context cards."""
-    return ScienceContextResponse(cards=MOCK_CARDS)
+async def get_science_context(session: AsyncSession = Depends(get_db)) -> ScienceContextResponse:
+    """Returns science context cards loaded from JSON with DB-driven unlock state."""
+    # Get all unlocked card keys for the team
+    stmt = select(Unlock.unlock_key).where(
+        Unlock.crew_id == "team",
+        Unlock.unlock_key.like("sc-%"),
+    )
+    res = await session.execute(stmt)
+    unlocked_keys = set(res.scalars().all())
+
+    cards = []
+    for raw in _RAW_CARDS:
+        cards.append(
+            ScienceContextCard(
+                id=raw["id"],
+                title=raw["title"],
+                plain_summary=raw["plain_summary"],
+                why_it_matters=raw["why_it_matters"],
+                evidence_level=EvidenceLevelEnum(raw["evidence_level"]),
+                sources=raw["sources"],
+                linked_signals=raw["linked_signals"],
+                unlocked=raw["id"] in unlocked_keys,
+            )
+        )
+    return ScienceContextResponse(cards=cards)

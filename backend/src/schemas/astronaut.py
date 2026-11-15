@@ -129,6 +129,7 @@ class ScienceContextCard(BaseModel):
     evidence_level: EvidenceLevelEnum = Field(..., description="Scientific evidence classification")
     sources: list[str] = Field(..., description="Peer-reviewed research and mission operational sources")
     linked_signals: list[str] = Field(..., description="Associated physiological and environmental telemetry signals")
+    unlocked: bool = Field(default=False, description="Whether this card has been unlocked via quest logging")
 
 
 class ScienceContextResponse(BaseDisclaimedModel):

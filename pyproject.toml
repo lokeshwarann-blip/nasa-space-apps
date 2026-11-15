@@ -6,5 +6,5 @@ build-backend = "setuptools.build_meta"
 minversion = "8.0"
 addopts = "-ra -q --strict-markers"
 testpaths = ["backend/tests"]
-pythonpath = ["backend"]
+pythonpath = ["backend", "."]
 

@@ -304,6 +304,24 @@ async def log_quest(id: str, payload: QuestLogRequest, session: AsyncSession = D
             session.add(u2)
             new_unlocks.append("bonus_rest_window")
 
+    # Trigger 3: Unlock the science card mapped to this quest
+    from src.api.v1.science_context_mock import QUEST_TO_CARD, TREGS_CARD_ID
+    card_id = QUEST_TO_CARD.get(id)
+    if card_id:
+        stmt_chk_sc = select(Unlock).where(Unlock.crew_id == "team", Unlock.unlock_key == card_id)
+        if not (await session.execute(stmt_chk_sc)).scalar_one_or_none():
+            sc_unlock = Unlock(id=uuid.uuid4(), crew_id="team", unlock_key=card_id, unlocked_at=now)
+            session.add(sc_unlock)
+            new_unlocks.append(card_id)
+
+    # Trigger 4: Unlock Tregs card after 3+ distinct quests logged
+    if len(all_events) >= 3:
+        stmt_chk_treg = select(Unlock).where(Unlock.crew_id == "team", Unlock.unlock_key == TREGS_CARD_ID)
+        if not (await session.execute(stmt_chk_treg)).scalar_one_or_none():
+            treg_unlock = Unlock(id=uuid.uuid4(), crew_id="team", unlock_key=TREGS_CARD_ID, unlocked_at=now)
+            session.add(treg_unlock)
+            new_unlocks.append(TREGS_CARD_ID)
+
     await session.commit()
 
     # Retrieve all current unlocks for response

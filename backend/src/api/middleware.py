@@ -64,7 +64,7 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
                         f"(max {settings.MAX_REQUEST_BODY_SIZE_BYTES} bytes)"
                     )
                     return JSONResponse(
-                        status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                         content={
                             "error": {
                                 "code": "PAYLOAD_TOO_LARGE",
