@@ -379,7 +379,7 @@ export default function BodyMap() {
                 <div style={{ width: "100%", marginTop: "4px" }}>
                     <HumanBody
                         height={520}
-                        focusedOrgan={focusedOrgan}
+                        selectedZone={focusedOrgan}
                         onSelectOrgan={(organId) => {
                             const matched = Object.values(ZONES).find((z) => z.organKey === organId || z.id === organId);
                             if (matched) setSelectedZone(matched);
