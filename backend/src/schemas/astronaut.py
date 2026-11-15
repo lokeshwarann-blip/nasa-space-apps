@@ -113,6 +113,13 @@ class QuestLogResponse(BaseDisclaimedModel):
     unlocked: list[str] = Field(default_factory=list, description="List of unlocked badges or operational perks")
 
 
+class TeamStreakResponse(BaseDisclaimedModel):
+    current_streak: int = Field(..., description="Active collective crew routine streak in days")
+    longest_streak: int = Field(..., description="Longest historical team streak achieved")
+    freeze_days_remaining: int = Field(..., description="Available freeze days to protect streak")
+    last_activity_date: Optional[str] = Field(default=None, description="ISO timestamp of latest team routine")
+
+
 # Science Context Schemas
 class ScienceContextCard(BaseModel):
     id: str = Field(..., description="Unique scientific context card identifier")

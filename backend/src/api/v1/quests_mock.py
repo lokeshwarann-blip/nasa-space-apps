@@ -12,6 +12,7 @@ from src.schemas.astronaut import (
     QuestLogRequest,
     QuestLogResponse,
     QuestsResponse,
+    TeamStreakResponse,
 )
 
 router = APIRouter(prefix="/quests", tags=["Quests & XP"])
@@ -96,6 +97,33 @@ async def _ensure_seeded_quests(session: AsyncSession) -> list[QuestModel]:
     return quests
 
 
+def calculate_streak_update(
+    current_streak: int,
+    longest_streak: int,
+    freeze_days_remaining: int,
+    last_activity_date: datetime | None,
+    new_activity_date: datetime,
+) -> tuple[int, int, int]:
+    """Calculates updated team streak values preserving 2 freeze days."""
+    if not last_activity_date:
+        return 1, max(longest_streak, 1), freeze_days_remaining
+
+    diff_days = (new_activity_date.date() - last_activity_date.date()).days
+    if diff_days <= 0:
+        return current_streak, longest_streak, freeze_days_remaining
+    elif diff_days == 1:
+        new_curr = current_streak + 1
+        return new_curr, max(longest_streak, new_curr), freeze_days_remaining
+    else:
+        missed = diff_days - 1
+        if missed <= freeze_days_remaining:
+            new_curr = current_streak + 1
+            new_freeze = freeze_days_remaining - missed
+            return new_curr, max(longest_streak, new_curr), new_freeze
+        else:
+            return 1, longest_streak, 2
+
+
 async def _update_team_streak(session: AsyncSession, event_time: datetime) -> TeamStreak:
     stmt = select(TeamStreak).where(TeamStreak.streak_type == "team")
     res = await session.execute(stmt)
@@ -113,36 +141,45 @@ async def _update_team_streak(session: AsyncSession, event_time: datetime) -> Te
         session.add(streak)
         return streak
 
-    if streak.last_activity_date:
-        days_diff = (event_time.date() - streak.last_activity_date.date()).days
-        if days_diff == 0:
-            # Same day activity, maintain streak
-            pass
-        elif days_diff == 1:
-            # Consecutive day
-            streak.current_streak += 1
-            if streak.current_streak > streak.longest_streak:
-                streak.longest_streak = streak.current_streak
-            streak.last_activity_date = event_time
-        elif 1 < days_diff <= (1 + streak.freeze_days_remaining):
-            # Used freeze days
-            days_missed = days_diff - 1
-            streak.freeze_days_remaining = max(0, streak.freeze_days_remaining - days_missed)
-            streak.current_streak += 1
-            if streak.current_streak > streak.longest_streak:
-                streak.longest_streak = streak.current_streak
-            streak.last_activity_date = event_time
-        else:
-            # Streak broken
-            streak.current_streak = 1
-            streak.freeze_days_remaining = 2
-            streak.last_activity_date = event_time
-    else:
-        streak.current_streak = 1
-        streak.longest_streak = max(streak.longest_streak, 1)
-        streak.last_activity_date = event_time
-
+    c, l, f = calculate_streak_update(
+        streak.current_streak,
+        streak.longest_streak,
+        streak.freeze_days_remaining,
+        streak.last_activity_date,
+        event_time,
+    )
+    streak.current_streak = c
+    streak.longest_streak = l
+    streak.freeze_days_remaining = f
+    streak.last_activity_date = event_time
     return streak
+
+
+@router.get(
+    "/streak",
+    response_model=TeamStreakResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get Shared Team Routine Streak",
+    description="Returns active collective crew streak and remaining freeze day protections with no individual rankings.",
+)
+async def get_team_streak(session: AsyncSession = Depends(get_db)) -> TeamStreakResponse:
+    """Returns collective crew streak status."""
+    stmt = select(TeamStreak).where(TeamStreak.streak_type == "team")
+    res = await session.execute(stmt)
+    streak = res.scalar_one_or_none()
+    if not streak:
+        return TeamStreakResponse(
+            current_streak=0,
+            longest_streak=0,
+            freeze_days_remaining=2,
+            last_activity_date=None,
+        )
+    return TeamStreakResponse(
+        current_streak=streak.current_streak,
+        longest_streak=streak.longest_streak,
+        freeze_days_remaining=streak.freeze_days_remaining,
+        last_activity_date=streak.last_activity_date.isoformat() if streak.last_activity_date else None,
+    )
 
 
 @router.get(
