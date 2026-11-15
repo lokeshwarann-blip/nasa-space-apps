@@ -121,6 +121,15 @@ All thresholds calibrated on `TUNE_SEEDS` to nominal target FAR $\approx 0.070 -
 - **25% Random Dropouts [verified]:** FAR = 0.040 [0.011, 0.102]. Status: **MET** (no inflation).
 - **Combined Stress Null [verified]:** FAR = 0.310 [0.211, 0.440]. Exceeds $2.0\times$ nominal. Status: **NOT MET**. Restored by empirical thresholding ($h_{\text{prim}}=3.70, t^2_{\text{sec}}=47.11$).
 
+#### Alert Processing Layer Ablation (Measured across 1,400 Scored Crew-Days) [verified]
+Evaluated over $N=200$ trajectories per condition to measure alert deduplication and multi-signal grouping without small-number statistical distortion (`eval/results/alert_layer_ablation.csv`):
+
+| Scenario Condition | Raw Unsuppressed Alarms | Alarms with 3-Day Cooldown | Repeated Alarms Suppressed | Bundled Clinical Incidents | Operational Impact |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **Multi 0.8 SD (4 Vitals)** [verified] | 1,565 | 702 | 863 (-55.1%) | 1,368 | Suppressed 863 duplicate daily alarms; bundled simultaneous organ signals. |
+| **Single 1.0 SD (HR)** [verified] | 1,432 | 600 | 832 (-58.1%) | 1,050 | Eliminated repeated alerts on ongoing cardiac elevation. |
+| **Nominal Null** [verified] | 10 | 7 | 3 (N/A small count) | 10 | False alarms are rare and isolated; percentage suppression not claimed. |
+
 ---
 
 ## 4. Task 2 & Task 6: AR(1) Autocorrelation & Dynamic Scenarios

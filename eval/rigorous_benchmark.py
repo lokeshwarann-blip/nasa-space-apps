@@ -477,84 +477,105 @@ def run_comprehensive_evaluation(n_eval: int = 200) -> None:
     df_attr.to_csv(csv_attr, index=False)
     print(f"Saved Channel Attribution CSV: {csv_attr}")
 
-    # Alert Layer Ablation on pure null trajectories
-    if null_trajectories:
-        run_alert_layer_ablation(trajectories_null=null_trajectories[:100], h_prim=h_prim, t2_sec=t2_sec)
+    # Alert Layer Ablation across Anomaly Excursions and Null
+    run_alert_layer_ablation(eval_seeds=eval_seeds, h_prim=h_prim, t2_sec=t2_sec)
 
     # Compute empirical null thresholds for misspecified scenarios
     compute_empirical_thresholds_per_null_type(n_tune=100)
 
 
-def run_alert_layer_ablation(trajectories_null, h_prim: float, t2_sec: float) -> None:
-    """Measures Cooldown and Incident Grouping at the alert layer (alert count vs incident count)."""
-    raw_alerts_total = 0
-    cooldown_alerts_total = 0
-    incidents_total = 0
+def run_alert_layer_ablation(eval_seeds: list[int], h_prim: float, t2_sec: float) -> None:
+    """Measures Cooldown and Incident Grouping at the alert layer across both Anomaly Excursions and Null.
+    
+    Reports actual event counts over 1,400 crew-days (N=200) to avoid small-number statistical distortion.
+    """
+    scenarios_to_ablate = [
+        ("Multi 0.8 SD (4 Vitals)", {"shift_type": "multi_metric", "multi_shift_metrics": CORE_VITALS, "shift_sd": 0.8, "shift_start_day": 7.0}),
+        ("Single 1.0 SD (HR)", {"shift_metric": "heart_rate", "shift_sd": 1.0, "shift_start_day": 7.0}),
+        ("Nominal Null", {}),
+    ]
     lam = 0.25
+    records = []
 
-    for raw, daily in trajectories_null:
-        core_base = daily[CORE_VITALS].iloc[:7].dropna()
-        if len(core_base) >= 5:
-            z_base = np.zeros(core_base.shape)
-            for c_i, m in enumerate(CORE_VITALS):
-                mu, sd = BASELINES[m]
-                z_base[:, c_i] = (core_base[m].values - mu) / max(sd, MIN_SD[m])
-            cov_est = LedoitWolf().fit(z_base).covariance_
-            cov_inv = np.linalg.pinv(cov_est)
-        else:
-            cov_inv = np.eye(len(CORE_VITALS))
+    for sc_name, sc_kwargs in scenarios_to_ablate:
+        raw_alerts_total = 0
+        cooldown_alerts_total = 0
+        incidents_total = 0
 
-        u = np.zeros(len(CORE_VITALS))
-        c_pos = {m: 0.0 for m in TEN_SIGNALS}
-        c_neg = {m: 0.0 for m in TEN_SIGNALS}
+        for seed in eval_seeds:
+            raw = generate_independent_trajectory(seed=seed, days=14, ar1_phi=0.3, **sc_kwargs)
+            df = from_measurements(raw)
+            daily = to_series(df, TEN_SIGNALS, freq="1D")
 
-        last_alert_day = {m: -99 for m in TEN_SIGNALS}
+            core_base = daily[CORE_VITALS].iloc[:7].dropna()
+            if len(core_base) >= 5:
+                z_base = np.zeros(core_base.shape)
+                for c_i, m in enumerate(CORE_VITALS):
+                    mu, sd = BASELINES[m]
+                    z_base[:, c_i] = (core_base[m].values - mu) / max(sd, MIN_SD[m])
+                cov_est = LedoitWolf().fit(z_base).covariance_
+                cov_inv = np.linalg.pinv(cov_est)
+            else:
+                cov_inv = np.eye(len(CORE_VITALS))
 
-        for d_idx in range(7, len(daily)):
-            row = daily.iloc[d_idx]
-            day_alerts = []
+            u = np.zeros(len(CORE_VITALS))
+            c_pos = {m: 0.0 for m in TEN_SIGNALS}
+            c_neg = {m: 0.0 for m in TEN_SIGNALS}
+            last_alert_day = {m: -99 for m in TEN_SIGNALS}
+            last_mewma_day = -99
 
-            # Primary CUSUM
-            for m in TEN_SIGNALS:
-                if m not in row or np.isnan(row[m]):
-                    continue
-                mu, sd = BASELINES[m]
-                z = (row[m] - mu) / max(sd, MIN_SD[m])
-                c_pos[m] = max(0.0, c_pos[m] + z - 0.5)
-                c_neg[m] = max(0.0, c_neg[m] - z - 0.5)
-                if c_pos[m] >= h_prim or c_neg[m] >= h_prim:
-                    raw_alerts_total += 1
-                    day_alerts.append(m)
-                    # Check 3-day cooldown
-                    if d_idx - last_alert_day[m] >= 3:
-                        cooldown_alerts_total += 1
-                        last_alert_day[m] = d_idx
+            for d_idx in range(7, len(daily)):
+                row = daily.iloc[d_idx]
+                day_alerts = []
 
-            # Secondary MEWMA
-            core_row = row[CORE_VITALS]
-            if not core_row.isna().any():
-                z_curr = np.array([(core_row[m] - BASELINES[m][0]) / max(BASELINES[m][1], MIN_SD[m]) for m in CORE_VITALS])
-                u = lam * z_curr + (1.0 - lam) * u
-                t_step = d_idx - 6
-                v_fac = (lam / (2.0 - lam)) * (1.0 - (1.0 - lam)**(2 * t_step))
-                sigma_u_inv = cov_inv / max(1e-6, v_fac)
-                t2 = float(np.dot(u, np.dot(sigma_u_inv, u)))
-                if t2 >= t2_sec:
-                    raw_alerts_total += 1
-                    if d_idx - last_alert_day.get("multivariate", -99) >= 3:
-                        cooldown_alerts_total += 1
-                        last_alert_day["multivariate"] = d_idx
+                # Primary CUSUM
+                for m in TEN_SIGNALS:
+                    if m not in row or np.isnan(row[m]):
+                        continue
+                    mu, sd = BASELINES[m]
+                    z = (row[m] - mu) / max(sd, MIN_SD[m])
+                    c_pos[m] = max(0.0, c_pos[m] + z - 0.5)
+                    c_neg[m] = max(0.0, c_neg[m] - z - 0.5)
+                    if c_pos[m] >= h_prim or c_neg[m] >= h_prim:
+                        raw_alerts_total += 1
+                        day_alerts.append(m)
+                        if d_idx - last_alert_day[m] >= 3:
+                            cooldown_alerts_total += 1
+                            last_alert_day[m] = d_idx
+
+                # Secondary MEWMA
+                core_row = row[CORE_VITALS]
+                if not core_row.isna().any():
+                    z_curr = np.array([(core_row[m] - BASELINES[m][0]) / max(BASELINES[m][1], MIN_SD[m]) for m in CORE_VITALS])
+                    u = lam * z_curr + (1.0 - lam) * u
+                    t_step = d_idx - 6
+                    v_fac = (lam / (2.0 - lam)) * (1.0 - (1.0 - lam)**(2 * t_step))
+                    sigma_u_inv = cov_inv / max(1e-6, v_fac)
+                    t2 = float(np.dot(u, np.dot(sigma_u_inv, u)))
+                    if t2 >= t2_sec:
+                        raw_alerts_total += 1
                         day_alerts.append("multivariate")
+                        if d_idx - last_mewma_day >= 3:
+                            cooldown_alerts_total += 1
+                            last_mewma_day = d_idx
 
-            # Incident clustering
-            if day_alerts:
-                incidents_total += 1
+                # Incident clustering
+                if day_alerts:
+                    incidents_total += 1
 
-    df_ablation = pd.DataFrame([
-        {"layer": "Raw Alerts Emitted (No Cooldown)", "total_events": raw_alerts_total, "rate_per_fortnight": round((raw_alerts_total / 700.0) * 14.0, 3)},
-        {"layer": "Deduplicated Alerts (With 3-day Cooldown)", "total_events": cooldown_alerts_total, "rate_per_fortnight": round((cooldown_alerts_total / 700.0) * 14.0, 3)},
-        {"layer": "Bundled Clinical Incidents (Incident Grouping)", "total_events": incidents_total, "rate_per_fortnight": round((incidents_total / 700.0) * 14.0, 3)},
-    ])
+        suppressed = raw_alerts_total - cooldown_alerts_total
+        suppressed_pct = round((suppressed / max(1, raw_alerts_total)) * 100.0, 1) if raw_alerts_total > 20 else "N/A (low event count)"
+        records.append({
+            "scenario": sc_name,
+            "crew_days_scored": len(eval_seeds) * 7,
+            "raw_alarms_emitted": raw_alerts_total,
+            "alarms_with_3d_cooldown": cooldown_alerts_total,
+            "cooldown_suppressed_count": suppressed,
+            "cooldown_suppression_pct": suppressed_pct,
+            "bundled_clinical_incidents": incidents_total,
+        })
+
+    df_ablation = pd.DataFrame(records)
     csv_ablation = RESULTS_DIR / "alert_layer_ablation.csv"
     df_ablation.to_csv(csv_ablation, index=False)
     print(f"Saved Alert Layer Ablation CSV: {csv_ablation}")

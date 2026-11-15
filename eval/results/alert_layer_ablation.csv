@@ -1,4 +1,4 @@
-layer,total_events,rate_per_fortnight
-Raw Alerts Emitted (No Cooldown),6,0.12
-Deduplicated Alerts (With 3-day Cooldown),3,0.06
-Bundled Clinical Incidents (Incident Grouping),6,0.12
+scenario,crew_days_scored,raw_alarms_emitted,alarms_with_3d_cooldown,cooldown_suppressed_count,cooldown_suppression_pct,bundled_clinical_incidents
+Multi 0.8 SD (4 Vitals),1400,1565,702,863,55.1,1368
+Single 1.0 SD (HR),1400,1432,600,832,58.1,1050
+Nominal Null,1400,10,7,3,N/A (low event count),10
