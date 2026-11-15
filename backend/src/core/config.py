@@ -1,7 +1,26 @@
 from functools import lru_cache
 from typing import Literal
-from pydantic import Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class ImmuneStressThresholds(BaseModel):
+    """Configurable thresholds for evaluating immune-stress operational context."""
+    # Sleep duration in hours (lower is worse)
+    sleep_act: float = Field(default=5.0, description="Sleep duration in hours at or below which triggers ACT")
+    sleep_watch: float = Field(default=6.5, description="Sleep duration in hours at or below which triggers WATCH")
+
+    # HRV RMSSD in milliseconds (lower is worse)
+    hrv_act: float = Field(default=25.0, description="HRV RMSSD in ms at or below which triggers ACT")
+    hrv_watch: float = Field(default=40.0, description="HRV RMSSD in ms at or below which triggers WATCH")
+
+    # Stress self-report rating 1-5 scale (higher is worse)
+    stress_watch: float = Field(default=3.0, description="Subjective stress rating at or above which triggers WATCH")
+    stress_act: float = Field(default=4.5, description="Subjective stress rating at or above which triggers ACT")
+
+    # Cumulative radiation dose in mSv / mGy (higher is worse)
+    dose_watch: float = Field(default=50.0, description="Cumulative absorbed radiation dose at or above which triggers WATCH")
+    dose_act: float = Field(default=100.0, description="Cumulative absorbed radiation dose at or above which triggers ACT")
 
 
 class Settings(BaseSettings):
@@ -56,6 +75,9 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ]
+
+    # Immune-stress context thresholds
+    IMMUNE_STRESS_THRESHOLDS: ImmuneStressThresholds = Field(default_factory=ImmuneStressThresholds)
 
     @field_validator("SECRET_KEY")
     @classmethod

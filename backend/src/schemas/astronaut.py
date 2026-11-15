@@ -136,6 +136,29 @@ class ScienceContextResponse(BaseDisclaimedModel):
     cards: list[ScienceContextCard] = Field(..., description="Educational and decision-support science context cards")
 
 
+# Immune-Stress Context Schemas
+class ImmuneStressContext(BaseModel):
+    """Operational context outcome for crew immune-stress evaluation."""
+    status: Literal["normal", "watch", "act"] = Field(
+        ..., description="Overall evaluated operational status: normal, watch, or act"
+    )
+    contributing_signals: list[str] = Field(
+        default_factory=list,
+        description="Telemetry signals contributing to elevated watch or act status"
+    )
+    note: str = Field(
+        default="context, not diagnosis",
+        description="Operational context reminder reinforcing non-diagnostic role"
+    )
+    signal_details: dict[str, Literal["normal", "watch", "act"]] = Field(
+        default_factory=dict,
+        description="Individual status classification for each evaluated telemetry signal"
+    )
+
+    def __getitem__(self, item: str) -> Any:
+        return getattr(self, item)
+
+
 # Pulse Measurements Schemas
 class PulseMeasurementRequest(BaseModel):
     hr: float = Field(..., ge=20.0, le=250.0, description="Heart rate in beats per minute")

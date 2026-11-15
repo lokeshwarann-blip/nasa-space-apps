@@ -12,6 +12,11 @@ from src.modules.clinical.schemas import (
     InputEvaluationSummary,
 )
 from src.modules.clinical.service import AssessmentService
+from src.modules.clinical.immune_stress import (
+    ImmuneStressContext,
+    compute_immune_stress_context,
+    evaluate_immune_stress_context,
+)
 
 __all__ = [
     "ClinicalRuleFinding",
@@ -23,5 +28,8 @@ __all__ = [
     "AssessmentListResponse",
     "InputEvaluationSummary",
     "AssessmentService",
+    "ImmuneStressContext",
+    "compute_immune_stress_context",
+    "evaluate_immune_stress_context",
 ]
 
