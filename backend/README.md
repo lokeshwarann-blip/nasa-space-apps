@@ -127,6 +127,27 @@ docker compose up --build
 
 The application runs as a secure, non-root user inside the container and will be accessible at `http://localhost:8000`.
 
+### Option C: Seeding Demonstration Data (Phase 3.1)
+
+To populate the database with demonstration data for crew member `CREW-001`, 14-day physiological baselines, operational quests, and science context cards, execute the seed command:
+
+```bash
+# From repository root:
+python backend/src/seed.py
+
+# Or from backend/ directory:
+python -m src.seed
+
+# Optional: wipe and re-seed cleanly:
+python backend/src/seed.py --clean
+```
+
+This single command:
+1. Registers demo crew member `CREW-001` (Commander, ACTIVE) and test user `crew-001`.
+2. Generates 14 days of realistic multi-signal baseline telemetry (`eval.generator.generate_independent_trajectory`), calculates the `FrozenBaseline`, and registers it in the `BaselineStore`.
+3. Seeds the 5 operational daily quests and initializes collective team streak with 2 freeze days remaining.
+4. Verifies science context cards from `science_cards.json` and initializes team card unlock states.
+
 ---
 
 ## 5. API Endpoints & Health Probes
