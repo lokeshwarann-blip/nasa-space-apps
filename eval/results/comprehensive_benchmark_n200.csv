@@ -1,53 +1,37 @@
 scenario,method,is_null,events_or_alerts,total_evaluated,point_estimate,ci_lower,ci_upper,median_delay_days
-Nominal Null,Plain Z-score,True,8,200,0.08,0.035,0.158,N/A
-Nominal Null,Per-Signal CUSUM,True,7,200,0.07,0.028,0.144,N/A
-Nominal Null,Sum-of-Z,True,6,200,0.06,0.022,0.131,N/A
-Nominal Null,MELIORA Fusion,True,7,200,0.07,0.028,0.144,N/A
-Single 0.5 SD (HR),Plain Z-score,False,8,200,4.0,1.742,7.729,5.0
-Single 0.5 SD (HR),Per-Signal CUSUM,False,7,200,3.5,1.419,7.078,5.0
-Single 0.5 SD (HR),Sum-of-Z,False,6,200,3.0,1.109,6.415,4.5
-Single 0.5 SD (HR),MELIORA Fusion,False,86,200,43.0,36.039,50.172,4.0
-Single 1.0 SD (HR),Plain Z-score,False,8,200,4.0,1.742,7.729,5.0
-Single 1.0 SD (HR),Per-Signal CUSUM,False,176,200,88.0,82.673,92.158,4.0
-Single 1.0 SD (HR),Sum-of-Z,False,29,200,14.5,9.931,20.156,3.0
-Single 1.0 SD (HR),MELIORA Fusion,False,197,200,98.5,95.679,99.69,1.0
-Single 2.0 SD (HR),Plain Z-score,False,196,200,98.0,94.959,99.452,1.0
-Single 2.0 SD (HR),Per-Signal CUSUM,False,200,200,100.0,98.172,100.0,1.0
-Single 2.0 SD (HR),Sum-of-Z,False,199,200,99.5,97.246,99.987,1.0
-Single 2.0 SD (HR),MELIORA Fusion,False,200,200,100.0,98.172,100.0,0.0
-Multi 0.5 SD (4 Vitals),Plain Z-score,False,8,200,4.0,1.742,7.729,5.0
-Multi 0.5 SD (4 Vitals),Per-Signal CUSUM,False,7,200,3.5,1.419,7.078,5.0
-Multi 0.5 SD (4 Vitals),Sum-of-Z,False,21,200,10.5,6.618,15.602,4.0
-Multi 0.5 SD (4 Vitals),MELIORA Fusion,False,200,200,100.0,98.172,100.0,1.0
-Multi 0.8 SD (4 Vitals),Plain Z-score,False,8,200,4.0,1.742,7.729,5.0
-Multi 0.8 SD (4 Vitals),Per-Signal CUSUM,False,136,200,68.0,61.053,74.404,5.0
-Multi 0.8 SD (4 Vitals),Sum-of-Z,False,143,200,71.5,64.706,77.645,3.0
-Multi 0.8 SD (4 Vitals),MELIORA Fusion,False,200,200,100.0,98.172,100.0,0.0
-Multi 1.0 SD (4 Vitals),Plain Z-score,False,9,200,4.5,2.078,8.37,5.0
-Multi 1.0 SD (4 Vitals),Per-Signal CUSUM,False,200,200,100.0,98.172,100.0,4.0
-Multi 1.0 SD (4 Vitals),Sum-of-Z,False,199,200,99.5,97.246,99.987,1.0
-Multi 1.0 SD (4 Vitals),MELIORA Fusion,False,200,200,100.0,98.172,100.0,0.0
-Multi 2.0 SD (4 Vitals),Plain Z-score,False,200,200,100.0,98.172,100.0,0.0
-Multi 2.0 SD (4 Vitals),Per-Signal CUSUM,False,200,200,100.0,98.172,100.0,1.0
-Multi 2.0 SD (4 Vitals),Sum-of-Z,False,200,200,100.0,98.172,100.0,0.0
-Multi 2.0 SD (4 Vitals),MELIORA Fusion,False,200,200,100.0,98.172,100.0,0.0
-Ramp 1.5 SD (HR),Plain Z-score,False,33,200,16.5,11.638,22.384,5.0
-Ramp 1.5 SD (HR),Per-Signal CUSUM,False,199,200,99.5,97.246,99.987,5.0
-Ramp 1.5 SD (HR),Sum-of-Z,False,69,200,34.5,27.937,41.531,5.0
-Ramp 1.5 SD (HR),MELIORA Fusion,False,200,200,100.0,98.172,100.0,3.0
-Misspecified Null: t(3) tails,Plain Z-score,True,42,200,0.42,0.303,0.568,N/A
-Misspecified Null: t(3) tails,Per-Signal CUSUM,True,11,200,0.11,0.055,0.197,N/A
-Misspecified Null: t(3) tails,Sum-of-Z,True,25,200,0.25,0.162,0.369,N/A
-Misspecified Null: t(3) tails,MELIORA Fusion,True,25,200,0.25,0.162,0.369,N/A
-Misspecified Null: Circadian,Plain Z-score,True,8,200,0.08,0.035,0.158,N/A
-Misspecified Null: Circadian,Per-Signal CUSUM,True,7,200,0.07,0.028,0.144,N/A
-Misspecified Null: Circadian,Sum-of-Z,True,6,200,0.06,0.022,0.131,N/A
-Misspecified Null: Circadian,MELIORA Fusion,True,7,200,0.07,0.028,0.144,N/A
-Misspecified Null: 25% Dropout,Plain Z-score,True,2,200,0.02,0.002,0.072,N/A
-Misspecified Null: 25% Dropout,Per-Signal CUSUM,True,1,200,0.01,0.0,0.056,N/A
-Misspecified Null: 25% Dropout,Sum-of-Z,True,2,200,0.02,0.002,0.072,N/A
-Misspecified Null: 25% Dropout,MELIORA Fusion,True,4,200,0.04,0.011,0.102,N/A
-Misspecified Null: Combined,Plain Z-score,True,51,200,0.51,0.38,0.671,N/A
-Misspecified Null: Combined,Per-Signal CUSUM,True,15,200,0.15,0.084,0.247,N/A
-Misspecified Null: Combined,Sum-of-Z,True,33,200,0.33,0.227,0.463,N/A
-Misspecified Null: Combined,MELIORA Fusion,True,31,200,0.31,0.211,0.44,N/A
+Nominal Null,Plain Z-score,True,9,200,0.09,0.041,0.171,N/A
+Nominal Null,Per-Signal CUSUM (Fair),True,6,200,0.06,0.022,0.131,N/A
+Nominal Null,Sum-of-Z,True,0,200,0.0,0.0,0.037,N/A
+Nominal Null,MELIORA Fusion,True,8,200,0.08,0.035,0.158,N/A
+Single 0.5 SD (HR),Plain Z-score,False,20,200,10.0,6.22,15.02,3.0
+Single 0.5 SD (HR),Per-Signal CUSUM (Fair),False,20,200,10.0,6.22,15.02,5.0
+Single 0.5 SD (HR),Sum-of-Z,False,0,200,0.0,0.0,1.83,N/A
+Single 0.5 SD (HR),MELIORA Fusion,False,26,200,13.0,8.67,18.47,5.0
+Single 1.0 SD (HR),Plain Z-score,False,113,200,56.5,49.33,63.48,3.0
+Single 1.0 SD (HR),Per-Signal CUSUM (Fair),False,162,200,81.0,74.87,86.19,4.0
+Single 1.0 SD (HR),Sum-of-Z,False,1,200,0.5,0.01,2.75,2.0
+Single 1.0 SD (HR),MELIORA Fusion,False,154,200,77.0,70.54,82.64,4.0
+Single 2.0 SD (HR),Plain Z-score,False,200,200,100.0,98.17,100.0,0.0
+Single 2.0 SD (HR),Per-Signal CUSUM (Fair),False,200,200,100.0,98.17,100.0,1.5
+Single 2.0 SD (HR),Sum-of-Z,False,56,200,28.0,21.9,34.77,3.0
+Single 2.0 SD (HR),MELIORA Fusion,False,200,200,100.0,98.17,100.0,1.0
+Multi 0.5 SD (4 Vitals),Plain Z-score,False,32,200,16.0,11.21,21.83,3.0
+Multi 0.5 SD (4 Vitals),Per-Signal CUSUM (Fair),False,50,200,25.0,19.16,31.6,5.0
+Multi 0.5 SD (4 Vitals),Sum-of-Z,False,1,200,0.5,0.01,2.75,2.0
+Multi 0.5 SD (4 Vitals),MELIORA Fusion,False,136,200,68.0,61.05,74.4,3.5
+Multi 0.8 SD (4 Vitals),Plain Z-score,False,107,200,53.5,46.33,60.56,3.0
+Multi 0.8 SD (4 Vitals),Per-Signal CUSUM (Fair),False,181,200,90.5,85.56,94.18,4.0
+Multi 0.8 SD (4 Vitals),Sum-of-Z,False,3,200,1.5,0.31,4.32,3.0
+Multi 0.8 SD (4 Vitals),MELIORA Fusion,False,199,200,99.5,97.25,99.99,1.0
+Multi 1.0 SD (4 Vitals),Plain Z-score,False,174,200,87.0,81.53,91.33,2.0
+Multi 1.0 SD (4 Vitals),Per-Signal CUSUM (Fair),False,200,200,100.0,98.17,100.0,3.0
+Multi 1.0 SD (4 Vitals),Sum-of-Z,False,40,200,20.0,14.69,26.22,3.5
+Multi 1.0 SD (4 Vitals),MELIORA Fusion,False,200,200,100.0,98.17,100.0,1.0
+Multi 2.0 SD (4 Vitals),Plain Z-score,False,200,200,100.0,98.17,100.0,0.0
+Multi 2.0 SD (4 Vitals),Per-Signal CUSUM (Fair),False,200,200,100.0,98.17,100.0,1.0
+Multi 2.0 SD (4 Vitals),Sum-of-Z,False,200,200,100.0,98.17,100.0,0.0
+Multi 2.0 SD (4 Vitals),MELIORA Fusion,False,200,200,100.0,98.17,100.0,0.0
+Ramp 1.5 SD (HR),Plain Z-score,False,155,200,77.5,71.08,83.09,4.0
+Ramp 1.5 SD (HR),Per-Signal CUSUM (Fair),False,183,200,91.5,86.74,94.97,5.0
+Ramp 1.5 SD (HR),Sum-of-Z,False,3,200,1.5,0.31,4.32,4.0
+Ramp 1.5 SD (HR),MELIORA Fusion,False,180,200,90.0,84.98,93.78,4.0

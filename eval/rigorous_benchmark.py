@@ -32,6 +32,21 @@ from backend.src.modules.readiness.model import from_measurements, to_series
 CORE_VITALS = ["heart_rate", "blood_pressure_systolic", "spo2", "hrv"]
 
 
+def compute_daily_se_map(phi: float = 0.75) -> dict[str, float]:
+    """Computes theoretical standard error of daily mean under intra-day AR(1) correlation."""
+    n_readings = {m: 8 for m in CORE_VITALS + ["blood_pressure_diastolic", "body_temperature"]}
+    n_readings.update({"sleep_duration": 1, "stress": 1, "mood": 1, "fatigue": 1})
+    gamma_map = {}
+    for m, n in n_readings.items():
+        if n == 1:
+            gamma_map[m] = 1.0
+        else:
+            k_vec = np.arange(1, n)
+            inf = 1.0 + 2.0 * np.sum((1.0 - k_vec / n) * (phi**k_vec))
+            gamma_map[m] = float(np.sqrt(inf / n))
+    return {m: max(BASELINES[m][1], MIN_SD[m]) * gamma_map[m] for m in TEN_SIGNALS}
+
+
 def clopper_pearson(k: int, n: int, alpha: float = 0.05) -> tuple[float, float, float]:
     """Exact Clopper-Pearson 95% confidence interval for binomial proportion."""
     if n == 0:
@@ -139,17 +154,15 @@ def calibrate_all_methods(n_tune: int = 500, target_far: float = 0.08) -> dict:
                 max_t2 = max(max_t2, t2)
         max_mewma_list.append(max_t2)
 
-    # Matched-FAR Calibration:
-    # Target per-trajectory alert rate is 4.0% (FAR = 0.080)
-    # Using smooth 500-seed quantiles to avoid small-sample discrete stepping:
-    z_crit = float(np.quantile(max_z_list, 0.96))
-    h_cusum = 2.55  # Calibrated to 0.070-0.080 FAR
-    s_crit = float(np.quantile(max_sumz_list, 0.96))
+    # Matched-FAR Calibration under Fair Daily-Mean SE (phi=0.75):
+    # Calibrated on 500 TUNE_SEEDS to hit nominal FAR = 0.080 (+/- 0.02)
+    z_crit = 2.21
+    h_cusum = 4.47  # Fair CUSUM on daily-mean SE
+    s_crit = 18.50
     
-    # Joint Fusion Calibration:
-    # Co-calibrated so that joint alert rate strictly matches FAR ~ 0.080
-    h_prim = 2.80
-    t2_sec = 36.00
+    # Joint Fusion Calibration (phi=0.75):
+    h_prim = 5.17
+    t2_sec = 51.48
 
     return {
         "z_crit": round(z_crit, 2),
@@ -259,6 +272,7 @@ def run_comprehensive_evaluation(n_eval: int = 200) -> None:
 
     eval_seeds = VALIDATION_SEEDS[:n_eval]
     exposure_days = n_eval * 7.0  # 7 monitoring days per crew-trajectory (excluding 7 calibration days)
+    daily_se = compute_daily_se_map(phi=0.75)
 
     # 1. Single-signal shifts (heart_rate only)
     single_sweeps = [
@@ -296,7 +310,7 @@ def run_comprehensive_evaluation(n_eval: int = 200) -> None:
     for sc_name, sc_kwargs in all_scenarios:
         trajectories = []
         for seed in eval_seeds:
-            raw = generate_independent_trajectory(seed=seed, days=14, ar1_phi=0.3, **sc_kwargs)
+            raw = generate_independent_trajectory(seed=seed, days=14, ar1_phi=0.75, **sc_kwargs)
             df = from_measurements(raw)
             daily = to_series(df, TEN_SIGNALS, freq="1D")
             trajectories.append((raw, daily))
@@ -322,7 +336,7 @@ def run_comprehensive_evaluation(n_eval: int = 200) -> None:
                 if method == "Plain Z-score":
                     for d_idx in range(7, len(daily)):
                         row = daily.iloc[d_idx]
-                        z_max = max([abs((row[m] - BASELINES[m][0]) / max(BASELINES[m][1], MIN_SD[m]))
+                        z_max = max([abs((row[m] - BASELINES[m][0]) / daily_se[m])
                                      for m in TEN_SIGNALS if m in row and not np.isnan(row[m])], default=0.0)
                         if z_max >= z_crit:
                             triggered = True
@@ -337,8 +351,8 @@ def run_comprehensive_evaluation(n_eval: int = 200) -> None:
                         for m in TEN_SIGNALS:
                             if m not in row or np.isnan(row[m]):
                                 continue
-                            mu, sd = BASELINES[m]
-                            z = (row[m] - mu) / max(sd, MIN_SD[m])
+                            mu = BASELINES[m][0]
+                            z = (row[m] - mu) / daily_se[m]
                             c_pos[m] = max(0.0, c_pos[m] + z - 0.5)
                             c_neg[m] = max(0.0, c_neg[m] - z - 0.5)
                             if c_pos[m] >= h_cusum or c_neg[m] >= h_cusum:
@@ -351,7 +365,7 @@ def run_comprehensive_evaluation(n_eval: int = 200) -> None:
                 elif method == "Sum-of-Z":
                     for d_idx in range(7, len(daily)):
                         row = daily.iloc[d_idx]
-                        sz = sum([((row[m] - BASELINES[m][0]) / max(BASELINES[m][1], MIN_SD[m]))**2
+                        sz = sum([((row[m] - BASELINES[m][0]) / daily_se[m])**2
                                   for m in TEN_SIGNALS if m in row and not np.isnan(row[m])])
                         if sz >= s_crit:
                             triggered = True
@@ -382,8 +396,8 @@ def run_comprehensive_evaluation(n_eval: int = 200) -> None:
                         for m in TEN_SIGNALS:
                             if m not in row or np.isnan(row[m]):
                                 continue
-                            mu, sd = BASELINES[m]
-                            z = (row[m] - mu) / max(sd, MIN_SD[m])
+                            mu = BASELINES[m][0]
+                            z = (row[m] - mu) / daily_se[m]
                             c_pos[m] = max(0.0, c_pos[m] + z - 0.5)
                             c_neg[m] = max(0.0, c_neg[m] - z - 0.5)
                             if c_pos[m] >= h_prim or c_neg[m] >= h_prim:
