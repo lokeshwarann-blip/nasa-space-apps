@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.middleware import RequestCorrelationMiddleware, RequestSizeLimitMiddleware
 from src.api.router import api_v1_router, root_health_router
+from src.api.v1.measurements_mock import router as measurements_pulse_router
 from src.core.config import Settings, get_settings
 from src.core.database import close_db_connection
 from src.core.exceptions import register_exception_handlers
@@ -81,6 +82,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # 4. Include Routers
     app.include_router(root_health_router)
     app.include_router(api_v1_router)
+    app.include_router(measurements_pulse_router)
 
     return app
 

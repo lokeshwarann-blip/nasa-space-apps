@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Any, Literal, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 DISCLAIMER: str = "Simulated data, decision support, not a medical device."
 
@@ -163,8 +163,26 @@ class ImmuneStressContext(BaseModel):
 class PulseMeasurementRequest(BaseModel):
     hr: float = Field(..., ge=20.0, le=250.0, description="Heart rate in beats per minute")
     hrv: Optional[float] = Field(default=None, ge=0.0, le=500.0, description="Heart rate variability (RMSSD) in ms")
-    signal_quality: str = Field(..., description="Telemetry signal quality (good, fair, poor)")
-    source: str = Field(..., description="Sensor acquisition hardware or method")
+    signal_quality: str = Field(..., min_length=1, description="Telemetry signal quality (good, fair, poor)")
+    source: str = Field(..., min_length=1, description="Sensor acquisition hardware or method")
+    crew_id: Optional[str] = Field(default=None, description="Optional pseudonymous crew member identifier")
+
+    @field_validator("source")
+    @classmethod
+    def validate_source(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("source cannot be empty")
+        return v.strip()
+
+    @field_validator("signal_quality")
+    @classmethod
+    def validate_signal_quality(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("signal_quality cannot be empty")
+        valid = {"excellent", "good", "fair", "poor", "unusable", "corrupted"}
+        if v.strip().lower() not in valid:
+            raise ValueError(f"signal_quality must be one of {sorted(valid)}")
+        return v.strip().lower()
 
 
 class PulseMeasurementResponse(BaseDisclaimedModel):

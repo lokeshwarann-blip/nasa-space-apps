@@ -79,6 +79,9 @@ class Settings(BaseSettings):
     # Immune-stress context thresholds
     IMMUNE_STRESS_THRESHOLDS: ImmuneStressThresholds = Field(default_factory=ImmuneStressThresholds)
 
+    # Telemetry ingestion thresholds
+    MIN_PULSE_SIGNAL_QUALITY: str = Field(default="fair", description="Minimum acceptable pulse signal quality ('good' or 'fair')")
+
     @field_validator("SECRET_KEY")
     @classmethod
     def validate_secret_key(cls, v: str, info) -> str:
